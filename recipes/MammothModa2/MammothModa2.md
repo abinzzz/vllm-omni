@@ -26,6 +26,9 @@ flags. Image size uses the standard `--height` / `--width` flags.
 
 ## References
 
+- AR image-cache correctness tests and repeated-request benchmark:
+  [Multimodal cache validation](cache_validation.md)
+
 - Upstream model:
   [`bytedance-research/MammothModa2-Preview`](https://huggingface.co/bytedance-research/MammothModa2-Preview)
 - Dev model:
