@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# SPDX-FileCopyrightText: Copyright contributors to the vLLM project
+# SPDX-FileCopyrightText: Copyright contributors to the vLLM-Omni project
 """Real processor cache tests; only model configuration/tokenizer files are needed.
 
 Set MAMMOTH_MODA2_TEST_MODEL to a local Preview or Dev checkpoint directory.
@@ -12,6 +12,7 @@ import numpy as np
 import pytest
 import torch
 from PIL import Image
+from transformers import AutoImageProcessor
 from vllm.config.multimodal import ImageDummyOptions
 from vllm.multimodal.cache import MultiModalProcessorOnlyCache
 from vllm.multimodal.inputs import batched_tensors_equal
@@ -28,7 +29,7 @@ pytestmark = [pytest.mark.core_model, pytest.mark.cpu]
 
 @pytest.fixture(scope="module")
 def context():
-    model = os.environ.get("MAMMOTH_MODA2_TEST_MODEL")
+    model = os.environ.get("MAMMOTH_MODA2_TEST_MODEL", "")
     if not model:
         pytest.skip("Set MAMMOTH_MODA2_TEST_MODEL to a local checkpoint (weights are not needed)")
     assert Path(model, "config.json").is_file()
@@ -79,6 +80,21 @@ def _assert_equal(a, b):
         k: v for k, v in b.items() if k not in ("prompt", "mm_kwargs")
     }
     assert batched_tensors_equal(a["mm_kwargs"].get_data(), b["mm_kwargs"].get_data())
+
+
+def test_image_processing_matches_checkpoint_reference(processors, context):
+    _, cached, _ = processors
+    image = _image(0)
+    reference = AutoImageProcessor.from_pretrained(context.model_config.model, local_files_only=True)
+    # vLLM casts floating processor outputs to the configured model dtype.
+    expected = reference(images=[image], return_tensors="pt").to(dtype=context.model_config.dtype)
+    # Dev intentionally declares Qwen2VL image preprocessing with patch_size=16.
+    # Compare against the checkpoint's processor, independently of the cache.
+    for _ in range(2):
+        actual = _process(cached, [image])["mm_kwargs"].get_data()
+        for field in ("pixel_values", "image_grid_thw"):
+            assert actual[field].dtype == expected[field].dtype
+            assert torch.equal(actual[field], expected[field])
 
 
 @pytest.mark.parametrize("token_prompt", [False, True])

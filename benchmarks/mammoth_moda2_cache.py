@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# SPDX-FileCopyrightText: Copyright contributors to the vLLM project
+# SPDX-FileCopyrightText: Copyright contributors to the vLLM-Omni project
 """Verify MammothModa2 image-cache reuse in a persistent AR-only engine.
 
 Run from the repository root with ``python -m benchmarks.mammoth_moda2_cache``.
@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import statistics
 import subprocess
 import tempfile
@@ -35,8 +36,10 @@ class CacheProbeWorkerExtension:
                 raise RuntimeError("Cache probe is already installed")
             counts = self._mammoth_probe_counts = {"encoder_calls": 0, "encoded_images": 0}
             self._mammoth_probe_new_keys = []
+            self._mammoth_probe_reads = []
             original = runner.model.embed_multimodal
             original_store = runner._cache_encoder_output
+            original_read = runner._get_encoder_output_from_cache
 
             def encode(**kwargs):
                 outputs = original(**kwargs)
@@ -51,33 +54,49 @@ class CacheProbeWorkerExtension:
                 self._mammoth_probe_new_keys.append(key)
 
             runner._cache_encoder_output = store
+
+            def read(key):
+                value = original_read(key)
+                # Keep the exact value returned to embedding gather, even if
+                # another entry happens to contain the expected feature.
+                self._mammoth_probe_reads.append((key, value))
+                return value
+
+            runner._get_encoder_output_from_cache = read
             torch.accelerator.reset_peak_memory_stats()
         elif action != "snapshot":
             raise ValueError(action)
 
         torch.accelerator.synchronize()
-        features = {}
-        storages = {}
-        for key, value in runner.encoder_cache.items():
+
+        def fingerprint(value):
             if not isinstance(value, torch.Tensor):
                 raise TypeError(f"Unsupported encoder-cache value: {type(value)}")
-            storage = value.untyped_storage()
-            storages[(str(value.device), storage.data_ptr())] = storage.nbytes()
             raw = value.detach().contiguous().view(torch.uint8).cpu().numpy().tobytes()
-            features[key] = {
+            return {
                 "shape": list(value.shape),
                 "dtype": str(value.dtype),
                 "sha256": hashlib.sha256(raw).hexdigest(),
             }
+
+        features = {}
+        storages = {}
+        for key, value in runner.encoder_cache.items():
+            features[key] = fingerprint(value)
+            storage = value.untyped_storage()
+            storages[(str(value.device), storage.data_ptr())] = storage.nbytes()
         newly_encoded = [features[key] for key in self._mammoth_probe_new_keys if key in features]
+        consumed = [{"key": key, "feature": fingerprint(value)} for key, value in self._mammoth_probe_reads]
         self._mammoth_probe_new_keys.clear()
+        self._mammoth_probe_reads.clear()
         return {
             **self._mammoth_probe_counts,
             "encoder_cache_storage_bytes": sum(storages.values()),
             "encoder_features": features,
             "newly_encoded_features": newly_encoded,
-            "gpu_allocated_bytes": torch.cuda.memory_allocated(),
-            "gpu_reserved_bytes": torch.cuda.memory_reserved(),
+            "consumed_encoder_features": consumed,
+            "gpu_allocated_bytes": torch.accelerator.memory_allocated(),
+            "gpu_reserved_bytes": torch.accelerator.memory_reserved(),
             "gpu_peak_allocated_bytes": torch.accelerator.max_memory_allocated(),
         }
 
@@ -109,8 +128,11 @@ def _request(omni, model, image, prompt, max_tokens, processor_kwargs=None):
 
     from vllm_omni.model_extras import build_x_to_text_prompt
 
-    inputs, stop_ids = build_x_to_text_prompt(model_family="mammoth_moda2", model=model, prompt=prompt, has_image=True)
-    inputs["multi_modal_data"] = {"image": image.copy()}
+    inputs, stop_ids = build_x_to_text_prompt(
+        model_family="mammoth_moda2", model=model, prompt=prompt, has_image=image is not None
+    )
+    if image is not None:
+        inputs["multi_modal_data"] = {"image": image.copy()}
     if processor_kwargs:
         inputs["mm_processor_kwargs"] = processor_kwargs
     params = SamplingParams(temperature=0, seed=42, max_tokens=max_tokens, stop_token_ids=stop_ids)
@@ -152,8 +174,12 @@ def _run_arm(args, image, enabled):
         enable_prefix_caching=False,
         enforce_eager=True,
         mm_processor_cache_gb=args.cache_gb if enabled else 0,
-        worker_extension_cls="benchmarks.mammoth_moda2_cache.CacheProbeWorkerExtension",
     )
+    instrumented = args.mode == "validate"
+    if instrumented:
+        stage["worker_extension_cls"] = "benchmarks.mammoth_moda2_cache.CacheProbeWorkerExtension"
+    else:
+        stage.pop("worker_extension_cls", None)
     records = []
     with tempfile.TemporaryDirectory(prefix="mammoth-cache-") as directory:
         deploy = Path(directory, "deploy.yaml")
@@ -164,8 +190,9 @@ def _run_arm(args, image, enabled):
         try:
             for index in range(args.warmup):
                 _request(omni, args.model, _variant(image, 1000 + index), args.prompt, args.max_tokens)
-            previous = _worker_stats(omni, "start")
-            previous_processor = _processor_stats(omni)
+            if instrumented:
+                previous = _worker_stats(omni, "start")
+                previous_processor = _processor_stats(omni)
             cases = [("first_a", image, args.prompt, None)]
             cases.extend((f"repeat_a_{i}", image, args.prompt, None) for i in range(args.repeats))
             cases.append(("changed_text", image, "Which text is visible in the image?", None))
@@ -173,6 +200,7 @@ def _run_arm(args, image, enabled):
                 ("changed_options", image, args.prompt, {"size": {"shortest_edge": 56**2, "longest_edge": 112**2}})
             )
             cases.extend((f"unique_{i}", _variant(image, i), args.prompt, None) for i in range(args.repeats))
+            cases.append(("text_only", None, "What is two plus two?", None))
             if args.eviction_requests:
                 cases.extend(
                     (f"evict_{i}", _variant(image, 100 + i), args.prompt, None) for i in range(args.eviction_requests)
@@ -180,46 +208,71 @@ def _run_arm(args, image, enabled):
                 cases.append(("after_encoder_eviction", image, args.prompt, None))
             for name, case_image, prompt, kwargs in cases:
                 output = _request(omni, args.model, case_image, prompt, args.max_tokens, kwargs)
-                worker = _worker_stats(omni)
-                processor = _processor_stats(omni)
                 record = {
                     "case": name,
-                    "image_sha256": hashlib.sha256(case_image.tobytes()).hexdigest(),
+                    "image_sha256": hashlib.sha256(case_image.tobytes()).hexdigest()
+                    if case_image is not None
+                    else None,
+                    "prompt": prompt,
                     "processor_kwargs": kwargs or {},
                     **output,
-                    "encoder_calls": worker["encoder_calls"] - previous["encoder_calls"],
-                    "encoded_images": worker["encoded_images"] - previous["encoded_images"],
-                    "processor_hits": processor["hits"] - previous_processor["hits"],
-                    "processor_lookups": processor["total"] - previous_processor["total"],
-                    "processor_cache": processor,
-                    "worker": worker,
-                    "frontend_rss_bytes": psutil.Process().memory_info().rss,
                 }
+                if instrumented:
+                    worker = _worker_stats(omni)
+                    processor = _processor_stats(omni)
+                    record.update(
+                        encoder_calls=worker["encoder_calls"] - previous["encoder_calls"],
+                        encoded_images=worker["encoded_images"] - previous["encoded_images"],
+                        processor_hits=processor["hits"] - previous_processor["hits"],
+                        processor_lookups=processor["total"] - previous_processor["total"],
+                        processor_cache=processor,
+                        worker=worker,
+                        frontend_rss_bytes=psutil.Process().memory_info().rss,
+                    )
+                    previous, previous_processor = worker, processor
                 records.append(record)
-                previous, previous_processor = worker, processor
-                print(
-                    f"cache={'on' if enabled else 'off'} {name}: {output['latency_s']:.3f}s, "
-                    f"processor_hits={record['processor_hits']}, encoded_images={record['encoded_images']}",
-                    flush=True,
+                detail = (
+                    f", processor_hits={record['processor_hits']}, encoded_images={record['encoded_images']}"
+                    if instrumented
+                    else ""
                 )
+                print(f"cache={'on' if enabled else 'off'} {name}: {output['latency_s']:.3f}s{detail}", flush=True)
         finally:
             omni.close()
     return {"enabled": enabled, "startup_s": startup_s, "config": config, "records": records}
 
 
-def _validate(arms):
+def _validate(arms, *, instrumented=True):
     disabled, enabled = arms
     checks = []
     for base, cached in zip(disabled["records"], enabled["records"], strict=True):
         name = base["case"]
+        if name != cached["case"] or any(
+            base[field] != cached[field] for field in ("image_sha256", "prompt", "processor_kwargs")
+        ):
+            raise ValueError("Cache arms must contain the same requests in the same order")
+        has_image = base["image_sha256"] is not None
         reuse = name.startswith("repeat_a_") or name == "changed_text"
         processor_reuse = reuse or name == "after_encoder_eviction"
         checks.append(
             {"case": name, "check": "identical_generated_tokens", "passed": base["token_ids"] == cached["token_ids"]}
         )
-        checks.append({"case": name, "check": "disabled_reencodes", "passed": base["encoded_images"] == 1})
         checks.append(
-            {"case": name, "check": "expected_encoder_reuse", "passed": cached["encoded_images"] == (0 if reuse else 1)}
+            {
+                "case": name,
+                "check": "identical_finish_reason",
+                "passed": base["finish_reason"] == cached["finish_reason"],
+            }
+        )
+        if not instrumented:
+            continue
+        checks.append({"case": name, "check": "disabled_reencodes", "passed": base["encoded_images"] == int(has_image)})
+        checks.append(
+            {
+                "case": name,
+                "check": "expected_encoder_reuse",
+                "passed": cached["encoded_images"] == int(has_image and not reuse),
+            }
         )
         checks.append(
             {
@@ -228,17 +281,25 @@ def _validate(arms):
                 "passed": (cached["processor_hits"] > 0) == processor_reuse,
             }
         )
-        # The disabled arm uses request-scoped keys. Compare feature contents,
-        # not identifiers, with the retained entries in the enabled arm.
-        base_features = base["worker"]["newly_encoded_features"]
-        cached_features = list(cached["worker"]["encoder_features"].values())
+        # Disabled requests have request-local keys. Compare the values actually
+        # returned to gather, in access order, including Dev deepstack features.
+        base_features = [item["feature"] for item in base["worker"]["consumed_encoder_features"]]
+        cached_features = [item["feature"] for item in cached["worker"]["consumed_encoder_features"]]
         checks.append(
             {
                 "case": name,
                 "check": "encoder_feature_equivalence",
-                "passed": bool(base_features) and all(v in cached_features for v in base_features),
+                "passed": bool(base_features) == has_image and base_features == cached_features,
             }
         )
+        if not has_image:
+            checks.append(
+                {
+                    "case": name,
+                    "check": "text_only_no_image_cache_lookups",
+                    "passed": base["processor_lookups"] == cached["processor_lookups"] == 0,
+                }
+            )
     return checks
 
 
@@ -248,6 +309,12 @@ def main():
     parser.add_argument("--deploy-config", required=True)
     parser.add_argument("--image", required=True)
     parser.add_argument("--output", required=True)
+    parser.add_argument(
+        "--mode",
+        choices=("validate", "latency"),
+        default="validate",
+        help="validate checks actual cache reads and memory; latency runs without worker probes",
+    )
     parser.add_argument("--prompt", default="Describe the image in one sentence.")
     parser.add_argument("--max-tokens", type=int, default=32)
     parser.add_argument("--repeats", type=int, default=5)
@@ -265,6 +332,8 @@ def main():
         parser.error("counts, image size, and cache capacity must be positive")
     if args.eviction_requests < 0:
         parser.error("--eviction-requests must be nonnegative")
+    if args.mode == "latency" and args.eviction_requests:
+        parser.error("Use --mode validate for eviction checks")
     image = Image.open(args.image).convert("RGB")
     image.thumbnail((args.max_image_size, args.max_image_size))
     model = Path(args.model)
@@ -277,11 +346,31 @@ def main():
         "benchmark_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         "model_revision": metadata.read_text().splitlines()[0] if metadata.exists() else None,
         "model_config_sha256": hashlib.sha256((model / "config.json").read_bytes()).hexdigest(),
+        "model_asset_sha256": {
+            name: hashlib.sha256((model / name).read_bytes()).hexdigest()
+            for name in (
+                "preprocessor_config.json",
+                "mammothu.tiktoken",
+                "mammothu_vision_tokens.txt",
+                "chat_template.jinja",
+            )
+            if (model / name).is_file()
+        },
         "versions": {name: version(name) for name in ("vllm", "vllm-omni", "torch", "transformers")},
+        "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES"),
         "gpu": subprocess.check_output(
-            ["nvidia-smi", "--query-gpu=name,driver_version,memory.total", "--format=csv,noheader"], text=True
+            ["nvidia-smi", "--query-gpu=index,uuid,name,driver_version,memory.total", "--format=csv,noheader"],
+            text=True,
         ).strip(),
-        "timing_scope": "Omni.generate wall time; excludes startup, warmup, image I/O, prompt building and probe RPCs",
+        "mode": args.mode,
+        "timing_scope": (
+            "Omni.generate wall time; excludes startup, warmup, image I/O and prompt building. "
+            + (
+                "Worker probes are installed; these timings are diagnostic, not performance measurements."
+                if args.mode == "validate"
+                else "No worker probes or fingerprint RPCs."
+            )
+        ),
         "arms": [],
     }
     output = Path(args.output)
@@ -289,12 +378,27 @@ def main():
     for enabled in (False, True):
         report["arms"].append(_run_arm(args, image, enabled))
         output.write_text(json.dumps(report, indent=2) + "\n")
-    report["checks"] = _validate(report["arms"])
+    report["checks"] = _validate(report["arms"], instrumented=args.mode == "validate")
     report["passed"] = all(check["passed"] for check in report["checks"])
     report["latency_medians_s"] = {
         "on" if arm["enabled"] else "off": {
             group: statistics.median(r["latency_s"] for r in arm["records"] if r["case"].startswith(group))
             for group in ("repeat_a_", "unique_")
+        }
+        for arm in report["arms"]
+    }
+    report["latency_summary_s"] = {
+        "on" if arm["enabled"] else "off": {
+            group: {
+                "count": len(values),
+                "median": statistics.median(values),
+                "mean": statistics.mean(values),
+                "stdev": statistics.stdev(values) if len(values) > 1 else 0.0,
+                "min": min(values),
+                "max": max(values),
+            }
+            for group in ("repeat_a_", "unique_")
+            if (values := [r["latency_s"] for r in arm["records"] if r["case"].startswith(group)])
         }
         for arm in report["arms"]
     }

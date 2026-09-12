@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# SPDX-FileCopyrightText: Copyright contributors to the vLLM project
+# SPDX-FileCopyrightText: Copyright contributors to the vLLM-Omni project
 # Single L40S 48 GB, AR-only cache validation.
 async_chunk: false
 pipeline: mammoth_moda2_ar

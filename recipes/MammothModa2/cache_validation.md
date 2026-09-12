@@ -14,6 +14,12 @@ when a caller provides an image UUID. Image-only results can be reused when
 the text changes, while tokenization and placeholder placement still follow
 the current request.
 
+The pinned Dev checkpoint also declares `Qwen2VLImageProcessorFast` and
+`Mammothmoda2Processor`, with `patch_size: 16`. Its Qwen3-VL encoder does not
+imply that the outer image processor must be replaced. The processor tests
+compare image tensors and grids against `AutoImageProcessor` loaded directly
+from each checkpoint, in addition to comparing cache hits and misses.
+
 The scheduler's encoder cache manager identifies visual features by their
 multimodal identifiers. Finishing a request releases its references; an
 unreferenced feature can remain available for another request until capacity
@@ -71,6 +77,7 @@ python -m benchmarks.mammoth_moda2_cache \
   --model /path/to/MammothModa2-Preview \
   --deploy-config benchmarks/mammoth_moda2_cache.yaml \
   --image /path/to/image.png \
+  --mode validate \
   --repeats 7 --warmup 3 --eviction-requests 24 \
   --output /path/to/preview-cache.json
 ```
@@ -99,17 +106,39 @@ The JSON report records:
 - Per-request wall time, generated token IDs/text, and finish reason.
 - Processor cache hits and actual model `embed_multimodal` invocation/image
   counts, independent of timing improvements.
-- SHA-256 fingerprints, shapes and dtypes of encoder outputs. Fingerprinting
-  happens after each measured request, outside its timing interval.
+- SHA-256 fingerprints, shapes and dtypes of the encoder outputs actually
+  returned to embedding gather, in access order, as well as resident entries.
+  A matching feature elsewhere in the cache cannot satisfy the equality check.
+  Fingerprinting happens after each request.
 - Unique encoder tensor storage bytes, GPU allocated/reserved/peak allocation,
   frontend RSS and processor-cache accounted size.
 - Equality checks for generated tokens and encoder features between arms,
-  expected hit/miss behavior, and median repeated/unique-image latency.
+  finish reasons, expected hit/miss behavior, and text-only requests without
+  image encoding or cache lookups.
 
 The benchmark exits unsuccessfully if an acceptance check fails. It writes the
 completed disabled arm before starting the enabled arm, retaining partial
 evidence if later startup fails. Instrumentation belongs only to the benchmark
 worker extension; production models and cache policies are unchanged.
+
+Run performance measurements separately, without the worker extension or
+per-request fingerprint RPCs:
+
+```bash
+python -m benchmarks.mammoth_moda2_cache \
+  --model /path/to/MammothModa2-Preview \
+  --deploy-config benchmarks/mammoth_moda2_cache.yaml \
+  --image /path/to/image.png \
+  --mode latency --repeats 30 --warmup 3 \
+  --output /path/to/preview-latency.json
+```
+
+The latency mode still compares generated token IDs and finish reasons between
+arms, but does not claim to verify encoder reuse; pair it with a successful
+`validate` run. Reports retain every request latency and include sample count,
+median, mean, standard deviation, minimum and maximum for repeated-image and
+unique-image requests. Repeat complete runs to assess variation. If production
+code changes, run the same harness and inputs on both pinned base/head checkouts.
 
 ## Interpreting measurements
 
@@ -118,6 +147,8 @@ queueing and generation. It excludes model startup, explicit warmup, image file
 I/O, prompt construction and probe RPCs. The first encounter of a different
 processing shape may still trigger JIT compilation and is reported separately.
 Do not run other GPU jobs, downloads or CPU tests during performance collection.
+Only `--mode latency` produces timings without worker probes. Timings recorded
+by `--mode validate` are diagnostic and should not be used to claim a speedup.
 
 The sender cache's accounted bytes represent retained receiver items, not
 physical frontend tensor storage. Frontend RSS is whole-process memory, not a
@@ -129,7 +160,83 @@ Seven requests are a small sample, and autoregressive decode can dominate the
 end-to-end duration. Report raw timings and distinct-image controls alongside
 any speedup; a hit does not guarantee a large end-to-end improvement.
 
-## Measured results (2026-09-08)
+## Current validation (2026-09-11)
+
+The current harness passed 36 CPU tests: ten benchmark verifier/probe tests,
+six model configuration tests, and ten processor tests for each pinned
+checkpoint below. The independent processor reference is converted to the
+configured model dtype, matching vLLM's processor-output conversion, before
+exact equality is checked for cache misses and hits.
+
+Fresh validation used branch `40cbd81f8b07b4157f1a12973cffbc482da98614` and an
+additional checkout of upstream `d3493384cfc6c4b9ba1fc4e534e91fe588ecb4f1`, each
+with the validation changes applied. Both used the existing Python 3.12.14,
+torch 2.13.0+cu129, vLLM 0.28.0+cu129, transformers 5.14.1, diffusers 0.40.0,
+kernels 0.15.2 environment and driver 570.133.20. Main declares kernels 0.16.1;
+these are scoped execution checks with the recorded runtime, not validation of
+all current-main dependencies. The model implementations are identical at the
+two code revisions; the main check also exercises its newer input renderer.
+
+Each variant on each revision passed all **499 GPU acceptance checks**, across
+83 measured requests per arm plus three distinct warmups. Runs used an L40S,
+eager BF16, TP=1, one AR worker, 32 maximum output tokens, seven repeated images
+and 64 eviction requests. The checked-in
+`tests/assets/qwen_image_edit/qwen_image_edit_2511_test1.png` was resized to
+262 x 448 RGB. This is a different input from the historical run below.
+
+The checks establish actual preprocessing/encoder reuse, exact token and
+consumed-feature parity, correct changed-image/option invalidation, text-only
+behavior, and re-encoding after eviction. An independent comparison of the two
+code revisions also matched request identity, tokens, finish reasons and
+consumed features for all 166 requests per variant.
+
+At the first repeated request, both revisions measured:
+
+| Variant | Target feature | Resident encoder off/on (MiB) | Processor accounted on (MiB) | GPU peak off/on (MiB) |
+| --- | --- | ---: | ---: | ---: |
+| Preview | BF16 [144, 3584], 0.984 MiB | 4.922 / 3.938 | 5.168 | 35824.91 / 35824.91 |
+| Dev | BF16 [112, 16384], 3.500 MiB | 17.500 / 14.000 | 5.250 | 35971.42 / 35971.42 |
+
+Resident features include warmups; processor accounting is not physical frontend
+RSS. Whole-engine peak allocation did not decrease in this configuration.
+
+Three uninstrumented Preview latency rounds on `40cbd81f` used one dedicated
+L40S, three warmups, 30 repeats and 30 distinct-image controls per arm. All
+three rounds passed token and finish-reason equality checks. Values below are
+per-round medians; JSON retains every sample and mean/stddev/min/max.
+
+| Round | Repeated off/on (ms) | Unique off/on (ms) |
+| --- | ---: | ---: |
+| 1 | 534.287 / 527.328 | 620.062 / 634.734 |
+| 2 | 535.171 / 526.578 | 612.705 / 642.181 |
+| 3 | 537.090 / 526.937 | 618.009 / 636.032 |
+
+Repeated-image reductions were 1.3-1.9%; unique-image controls were 2.4-4.8%
+slower. Arms always ran off before on. The host had unrelated jobs on other
+GPUs, although no other workload used the measured GPU. These results do not
+establish statistical significance, throughput scaling or a general speedup.
+They measure existing caching, not a production optimization introduced by
+this change.
+
+An independent three-round run on `d3493384`, on the same GPU and with the
+same settings, also passed all token/finish-reason checks:
+
+| Round | Repeated off/on (ms) | Unique off/on (ms) |
+| --- | ---: | ---: |
+| 1 | 537.462 / 528.210 | 619.885 / 636.750 |
+| 2 | 536.113 / 523.861 | 622.369 / 622.136 |
+| 3 | 539.432 / 508.661 | 623.165 / 615.856 |
+
+The main run's repeated-image reductions range from 1.7% to 5.7%, while its
+unique-image controls range from 2.7% slower to 1.2% faster. The third round
+shifts both groups, reinforcing the shared-host and fixed-order limitations:
+the full observed change cannot be attributed confidently to caching alone.
+
+## Historical measured results (2026-09-08)
+
+These results predate the separate latency mode and the consumed-feature
+assertions. They describe the original instrumented benchmark, not a fresh run
+of the current harness.
 
 Validation used checkout `c704aeccae192d7f88e9138271682ddad1327a69` with
 the benchmark and tests in this change, one NVIDIA L40S (46068 MiB), driver
@@ -149,7 +256,7 @@ encoded one image. After encoder eviction, the original image still hit the CPU
 processor cache and correctly recomputed its visual features.
 
 | Variant | Repeated, off (s) | Repeated, on (s) | Unique, off (s) | Unique, on (s) |
-|---------|-----------------:|----------------:|---------------:|--------------:|
+| --------- | -----------------: | ----------------: | ---------------: | --------------: |
 | Preview | 0.7533 | 0.7413 | 0.7556 | 0.7695 |
 | Dev | 0.9567 | 0.9429 | 0.9535 | 0.9711 |
 
@@ -171,12 +278,40 @@ cache mode and multi-worker configurations were not tested.
 
 ## Preview text-to-image regression
 
-A separate single-L40S smoke test completed Preview AR-to-DiT generation with
+An opt-in pytest regression runs both cache configurations on fresh engines,
+at 256 x 256 / 5 steps and 512 x 512 / 50 steps, with both stages on one visible
+L40S. It saves the effective deployment YAMLs,
+PNG images and a JSON report under the pytest temporary directory, checks image
+size and nonblank output, and compares all RGB pixels between cache off/on:
+
+```bash
+CUDA_VISIBLE_DEVICES=0 \
+MAMMOTH_MODA2_T2I_MODEL=/path/to/MammothModa2-Preview \
+  python -m pytest \
+  tests/e2e/offline_inference/test_mammoth_moda2_cache_regression.py \
+  -q -o addopts='' --basetemp=/path/to/t2i-regression-results
+```
+
+Use a new output directory for each run: pytest clears its `--basetemp` directory.
+The regression uses seed 42 and guidance 4.0, with AR/DiT GPU memory fractions
+0.8/0.16. The AR token limits are 273 and 1057 for the two resolutions. Both
+configurations passed exact RGB equality on both code revisions above, and the
+512px image also matched exactly across revisions. The 256px/5-step image is
+visually poor and is only an execution smoke test; the 512px/50-step image
+depicts the prompted red mug. This is not a dataset-level image-quality test.
+
+The test validates the generation pipeline while changing the cache setting;
+a text-only generation prompt does
+not demonstrate an image-encoder cache hit or a DiT speedup. Model assets must
+already be downloaded locally. Without `MAMMOTH_MODA2_T2I_MODEL`, collection
+skips this GPU regression and does not download weights.
+
+The historical 2026-09-08 single-L40S smoke test completed Preview AR-to-DiT generation with
 cache enabled: seed 42, 256 x 256 output, five diffusion steps, and guidance 4.0.
 The result was a nonblank RGB image. This checks pipeline execution, not image
 quality or a text-to-image cache speedup.
 
-At the validated checkout, the shared image example fails before inference
+At the historical checkout, the shared image example failed before inference
 because it forwards diffusion defaults without a structured config owner for
 this pipeline (including `cfg_parallel_size` and `enable_cpu_offload`). The smoke
 test therefore used the minimal `Omni` API. To reproduce, copy the supplied
@@ -250,5 +385,6 @@ if __name__ == "__main__":
   orchestrator. Use a fresh engine for a cold baseline. The processor tests
   exercise local clearing; this is not evidence of a complete serving reset API.
 - Preview text-to-image is checked separately as described above. The shared
-  example's argument compatibility issue remains unresolved. An AR image-cache benchmark does not validate DiT or
-  claim improvements for a text-to-image request without an input image.
+  example's historical argument issue is not a result of this cache validation.
+  An AR image-cache benchmark does not validate DiT acceleration or claim
+  improvements for a text-to-image request without an input image.
