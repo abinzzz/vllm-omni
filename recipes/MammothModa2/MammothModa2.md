@@ -6,7 +6,7 @@
 
 - Vendor: ByteDance Research
 - Models: `bytedance-research/MammothModa2-Preview`, `bytedance-research/MammothModa2-Dev`
-- Tasks: Preview and Dev text-to-image (AR → DiT); Dev text/image understanding
+- Tasks: Preview and Dev text-to-image (AR → DiT) and text/image understanding
 - Mode: Offline inference
 - Maintainer: Community
 
@@ -59,24 +59,36 @@ Replica-specific cache keys are applied to a per-request copy of the prompt.
 Reusing the same prompt dictionary preserves the caller's image UUIDs and lets
 each AR replica reuse its own cached image after its first request.
 
-For the two-replica L40S profile, set these fields on stage 0 in
+For single-GPU AR understanding on an L40S, set these fields on stage 0 in
 [`mammoth_moda2_ar.yaml`](../../vllm_omni/deploy/mammoth_moda2_ar.yaml):
 
 ```yaml
-devices: "0,1"
-num_replicas: 2
+devices: "0"
+num_replicas: 1
 tensor_parallel_size: 1
 max_num_seqs: 1
 max_model_len: 4096
 gpu_memory_utilization: 0.8
 mm_processor_cache_gb: 1
+mm_processor_cache_type: lru
 ```
 
-Each replica loads a complete AR model on its GPU. Keep eager execution and
-prefix caching disabled. The checked profile uses vLLM 0.29, CUDA/L40S, BF16,
-TP=1 and sequential Preview/Dev image-understanding requests. Concurrent
+Keep eager execution enabled and prefix caching disabled, as in that config.
+One GPU is sufficient. To use two local AR replicas, change `devices` to
+`"0,1"` and `num_replicas` to `2`; each replica loads a complete AR model on its
+GPU. Both profiles were checked with vLLM 0.29, CUDA/L40S, BF16, TP=1 and
+sequential Preview/Dev image-understanding and text-only requests. Concurrent
 batching, remote replicas and other hardware are not qualified here.
 AR prefix/KV caching and DiT caching remain separate features.
+
+Single-GPU checks cover cache-off/on output and encoder-feature equivalence,
+processor capacity eviction, frontend cache clearing and natural encoder
+eviction. `AsyncOmni.reset_mm_cache()` clears the frontend processor cache;
+the next request reprocesses the image but can reuse resident encoder features.
+An evicted encoder entry is recomputed even if preprocessing still hits.
+Explicit `AsyncOmni.reset_encoder_cache()` is not yet implemented through the
+Orchestrator. Preview text-to-image was also checked for unchanged output;
+Dev text-to-image is not part of this cache validation.
 
 With vLLM 0.29, `mm_processor_cache_gb: 0` also disables cross-request encoder
 reuse through request-local multimodal identifiers. A cache-off/on comparison
