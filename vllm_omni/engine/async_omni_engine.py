@@ -738,6 +738,12 @@ class AsyncOmniEngine:
                 for item in prompt:
                     inject_global_id(item, request_id)
 
+            # Replica-scoped cache keys must not overwrite reusable caller UUIDs.
+            if isinstance(prompt, dict):
+                prompt = copy.copy(prompt)
+            elif isinstance(prompt, list):
+                prompt = [copy.copy(item) for item in prompt]
+
             preselected_stage0_replica = self._scope_stage0_multimodal_cache_to_replica(
                 request_id,
                 prompt,

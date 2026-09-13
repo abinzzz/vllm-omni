@@ -342,7 +342,11 @@ def _replica(input_addr: str) -> ReplicaInfo:
     )
 
 
-def test_build_add_request_message_scopes_mm_uuids_to_selected_stage0_replica(mocker: MockerFixture):
+@pytest.mark.parametrize("reuse_prompt", [False, True])
+@pytest.mark.parametrize("explicit_uuid", [False, True])
+def test_build_add_request_message_scopes_mm_uuids_to_selected_stage0_replica(
+    mocker: MockerFixture, reuse_prompt: bool, explicit_uuid: bool
+):
     engine = object.__new__(AsyncOmniEngine)
     params = SamplingParams(max_tokens=8)
     engine.model = "test-model"
@@ -362,13 +366,13 @@ def test_build_add_request_message_scopes_mm_uuids_to_selected_stage0_replica(mo
     input_processor.process_inputs.side_effect = process_inputs
     engine.input_processor = input_processor
 
-    for request_id in ("req-1", "req-2"):
+    prompt = {"prompt": "describe", "multi_modal_data": {"image": "same-image"}}
+    if explicit_uuid:
+        prompt["multi_modal_uuids"] = {"image": ["user-image"]}
+    for request_id in ("req-1", "req-2", "req-3"):
         engine._build_add_request_message(
             request_id=request_id,
-            prompt={
-                "prompt": "describe",
-                "multi_modal_data": {"image": "same-image"},
-            },
+            prompt=prompt if reuse_prompt else prompt.copy(),
             sampling_params_list=[params],
             final_stage_id=0,
         )
@@ -376,6 +380,8 @@ def test_build_add_request_message_scopes_mm_uuids_to_selected_stage0_replica(mo
     assert seen_uuids[0].startswith("stage0:rep0:")
     assert seen_uuids[1].startswith("stage0:rep1:")
     assert seen_uuids[0].removeprefix("stage0:rep0:") == seen_uuids[1].removeprefix("stage0:rep1:")
+    assert seen_uuids[2] == seen_uuids[0]
+    assert prompt.get("multi_modal_uuids") == ({"image": ["user-image"]} if explicit_uuid else None)
 
 
 @pytest.mark.asyncio
@@ -405,19 +411,19 @@ async def test_build_add_request_message_scopes_mm_uuids_to_distributed_stage0_r
     input_processor.process_inputs.side_effect = process_inputs
     engine.input_processor = input_processor
 
-    for request_id in ("req-1", "req-2"):
+    prompt = {"prompt": "describe", "multi_modal_data": {"image": "same-image"}}
+    for request_id in ("req-1", "req-2", "req-3"):
         engine._build_add_request_message(
             request_id=request_id,
-            prompt={
-                "prompt": "describe",
-                "multi_modal_data": {"image": "same-image"},
-            },
+            prompt=prompt,
             sampling_params_list=[params],
             final_stage_id=0,
         )
 
     assert seen_uuids[0].startswith("stage0:rep0:")
     assert seen_uuids[1].startswith("stage0:rep1:")
+    assert seen_uuids[2] == seen_uuids[0]
+    assert "multi_modal_uuids" not in prompt
     assert stage_pool.get_bound_replica_id("req-1") == 0
     assert stage_pool.get_bound_replica_id("req-2") == 1
     assert await stage_pool.pick("req-1") == 0

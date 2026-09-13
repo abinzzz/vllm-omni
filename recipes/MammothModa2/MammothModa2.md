@@ -49,28 +49,36 @@ cache — see the note under *1x L40S 48GB*.
 
 ## AR Multimodal Cache
 
-Preview and Dev inherit vLLM's image preprocessing and vision-encoder caches.
+Preview and Dev reuse vLLM's image preprocessing and vision-encoder caches.
 Repeated images can reuse image-only results within the same running AR engine,
 including when the text prompt changes. Image processing options participate in
 the cache key. Caller-provided image UUIDs are trusted identities; use a new UUID
 when the image contents change. Evicted encoder features are recomputed.
 
-For the validated single-L40S profile, set these fields on stage 0 in
+Replica-specific cache keys are applied to a per-request copy of the prompt.
+Reusing the same prompt dictionary preserves the caller's image UUIDs and lets
+each AR replica reuse its own cached image after its first request.
+
+For the two-replica L40S profile, set these fields on stage 0 in
 [`mammoth_moda2_ar.yaml`](../../vllm_omni/deploy/mammoth_moda2_ar.yaml):
 
 ```yaml
+devices: "0,1"
+num_replicas: 2
+tensor_parallel_size: 1
 max_num_seqs: 1
 max_model_len: 4096
 gpu_memory_utilization: 0.8
 mm_processor_cache_gb: 1
 ```
 
-Keep the existing eager execution and disabled prefix-cache settings. Coverage
-is Preview/Dev image understanding on CUDA/L40S, BF16, TP=1 and one request at a
-time. Other hardware, replicas and feature combinations are not qualified here.
-AR prefix/KV caching and DiT caching are separate features.
+Each replica loads a complete AR model on its GPU. Keep eager execution and
+prefix caching disabled. The checked profile uses vLLM 0.29, CUDA/L40S, BF16,
+TP=1 and sequential Preview/Dev image-understanding requests. Concurrent
+batching, remote replicas and other hardware are not qualified here.
+AR prefix/KV caching and DiT caching remain separate features.
 
-With vLLM 0.28.0, `mm_processor_cache_gb: 0` also disables cross-request encoder
+With vLLM 0.29, `mm_processor_cache_gb: 0` also disables cross-request encoder
 reuse through request-local multimodal identifiers. A cache-off/on comparison
 therefore measures both caches together. The processor-cache capacity is a host
 memory budget, not the total engine memory footprint. Measure repeated images
