@@ -6,7 +6,7 @@
 
 - Vendor: ByteDance Research
 - Models: `bytedance-research/MammothModa2-Preview`, `bytedance-research/MammothModa2-Dev`
-- Tasks: Preview and Dev text-to-image (AR → DiT) and text/image understanding
+- Tasks: Preview and Dev text-to-image (AR → DiT); Dev text/image understanding
 - Mode: Offline inference
 - Maintainer: Community
 
@@ -46,68 +46,6 @@ The default deploy config runs both the AR and DiT stages on a single GPU
 stage-1 DiT `0.3`) is sized for an ~80 GB GPU. The model also fits on a 48 GB GPU
 after rebalancing the split so the AR weights (~23 GB) leave room for the KV
 cache — see the note under *1x L40S 48GB*.
-
-## AR Multimodal Cache
-
-Preview and Dev reuse vLLM's image preprocessing and vision-encoder caches.
-Repeated images can reuse image-only results within the same running AR engine,
-including when the text prompt changes. Image processing options participate in
-the cache key. Caller-provided image UUIDs are trusted identities; use a new UUID
-when the image contents change. Evicted encoder features are recomputed.
-
-Replica-specific cache keys are applied to a per-request copy of the prompt.
-Reusing the same prompt dictionary preserves the caller's image UUIDs and lets
-each AR replica reuse its own cached image after its first request.
-
-For single-GPU AR understanding on an L40S, set these fields on stage 0 in
-[`mammoth_moda2_ar.yaml`](../../vllm_omni/deploy/mammoth_moda2_ar.yaml):
-
-```yaml
-devices: "0"
-num_replicas: 1
-tensor_parallel_size: 1
-max_num_seqs: 1
-max_model_len: 4096
-gpu_memory_utilization: 0.8
-mm_processor_cache_gb: 1
-mm_processor_cache_type: lru
-```
-
-Keep eager execution enabled and prefix caching disabled, as in that config.
-One GPU is sufficient. To use two local AR replicas, change `devices` to
-`"0,1"` and `num_replicas` to `2`; each replica loads a complete AR model on its
-GPU. Both profiles were checked with vLLM 0.29, CUDA/L40S, BF16, TP=1 and
-sequential Preview/Dev image-understanding and text-only requests. Concurrent
-batching, remote replicas and other hardware are not qualified here.
-AR prefix/KV caching and DiT caching remain separate features.
-
-Single-GPU checks cover cache-off/on output and encoder-feature equivalence,
-processor capacity eviction, frontend cache clearing and natural encoder
-eviction. `AsyncOmni.reset_mm_cache()` clears the frontend processor cache;
-the next request reprocesses the image but can reuse resident encoder features.
-An evicted encoder entry is recomputed even if preprocessing still hits.
-Explicit `AsyncOmni.reset_encoder_cache()` is not yet implemented through the
-Orchestrator. Preview text-to-image was also checked for unchanged output;
-Dev text-to-image is not part of this cache validation.
-
-With vLLM 0.29, `mm_processor_cache_gb: 0` also disables cross-request encoder
-reuse through request-local multimodal identifiers. A cache-off/on comparison
-therefore measures both caches together. The processor-cache capacity is a host
-memory budget, not the total engine memory footprint. Measure repeated images
-and unique-image controls separately after warmup; reuse does not guarantee an
-end-to-end speedup or lower peak GPU memory.
-
-Run the processor correctness tests with local configuration, tokenizer and
-image-processor files (model weights are not loaded):
-
-```bash
-MAMMOTH_MODA2_TEST_MODEL=/path/to/MammothModa2-Preview \
-  python -m pytest tests/model_executor/models/mammoth_moda2/test_multimodal_cache.py -q
-```
-
-Repeat with the Dev checkpoint. The tests cover cache-off/miss/hit equivalence,
-changed text and processing options, distinct and reordered images, text-only
-requests, clearing and capacity eviction. They skip when the model path is unset.
 
 ## GPU
 
