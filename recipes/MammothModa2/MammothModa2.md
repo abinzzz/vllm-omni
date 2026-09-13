@@ -26,9 +26,6 @@ flags. Image size uses the standard `--height` / `--width` flags.
 
 ## References
 
-- AR image-cache correctness tests and repeated-request benchmark:
-  [Multimodal cache validation](cache_validation.md)
-
 - Upstream model:
   [`bytedance-research/MammothModa2-Preview`](https://huggingface.co/bytedance-research/MammothModa2-Preview)
 - Dev model:
@@ -49,6 +46,48 @@ The default deploy config runs both the AR and DiT stages on a single GPU
 stage-1 DiT `0.3`) is sized for an ~80 GB GPU. The model also fits on a 48 GB GPU
 after rebalancing the split so the AR weights (~23 GB) leave room for the KV
 cache — see the note under *1x L40S 48GB*.
+
+## AR Multimodal Cache
+
+Preview and Dev inherit vLLM's image preprocessing and vision-encoder caches.
+Repeated images can reuse image-only results within the same running AR engine,
+including when the text prompt changes. Image processing options participate in
+the cache key. Caller-provided image UUIDs are trusted identities; use a new UUID
+when the image contents change. Evicted encoder features are recomputed.
+
+For the validated single-L40S profile, set these fields on stage 0 in
+[`mammoth_moda2_ar.yaml`](../../vllm_omni/deploy/mammoth_moda2_ar.yaml):
+
+```yaml
+max_num_seqs: 1
+max_model_len: 4096
+gpu_memory_utilization: 0.8
+mm_processor_cache_gb: 1
+```
+
+Keep the existing eager execution and disabled prefix-cache settings. Coverage
+is Preview/Dev image understanding on CUDA/L40S, BF16, TP=1 and one request at a
+time. Other hardware, replicas and feature combinations are not qualified here.
+AR prefix/KV caching and DiT caching are separate features.
+
+With vLLM 0.28.0, `mm_processor_cache_gb: 0` also disables cross-request encoder
+reuse through request-local multimodal identifiers. A cache-off/on comparison
+therefore measures both caches together. The processor-cache capacity is a host
+memory budget, not the total engine memory footprint. Measure repeated images
+and unique-image controls separately after warmup; reuse does not guarantee an
+end-to-end speedup or lower peak GPU memory.
+
+Run the processor correctness tests with local configuration, tokenizer and
+image-processor files (model weights are not loaded):
+
+```bash
+MAMMOTH_MODA2_TEST_MODEL=/path/to/MammothModa2-Preview \
+  python -m pytest tests/model_executor/models/mammoth_moda2/test_multimodal_cache.py -q
+```
+
+Repeat with the Dev checkpoint. The tests cover cache-off/miss/hit equivalence,
+changed text and processing options, distinct and reordered images, text-only
+requests, clearing and capacity eviction. They skip when the model path is unset.
 
 ## GPU
 
