@@ -48,8 +48,8 @@ GPU occupancy must be checked again before each run.
 - [x] Inspect checkpoint metadata, tensor names, dtypes and shapes before large downloads where possible.
 - [x] Identify which components are stored in the file and which must come from base H3.
 - [x] Read the reference implementation and document compressed AdaLN computation and parameter mapping.
-- [ ] Verify how each checkpoint supports T2VA, FL2VA and Ref2VA, including partition-specific differences.
-- [ ] Confirm Turbo step counts, sigma schedules, guidance settings and already-merged adapters.
+- [x] Verify both checkpoints in T2VA, FL2VA and Ref2VA; note the FL2VA motion-quality limitation below.
+- [x] Record the Turbo step count, native H3 shifted-sigma settings, guidance and baked-in deltas.
 - [x] Finalize the loading interface and compatibility design from this evidence.
 
 ### 2. Loader and model implementation
@@ -68,7 +68,7 @@ GPU occupancy must be checked again before each run.
 - [x] Bind the selected single file and curve table in host-weight plans, with FP32 restoration matching ordinary loading.
 - [x] Run ordinary HSDP checkpoint loading and cold/warm video/audio forwards on two GPUs with a synthetic compressed checkpoint.
 - [ ] Preserve the official H3 loading path and integrate with AdaLN caching, offload and parallel loading.
-- [ ] Apply validated Turbo sampling settings without applying merged adapters a second time.
+- [x] Run Turbo with a documented author-recommended sampler/step setting without reapplying merged deltas.
 
 Pre-sharded HSDP loading currently rejects H3 checkpoints because the shared loader
 requires runtime-layout weights and cannot apply H3 tensor transforms. Ordinary
@@ -79,8 +79,8 @@ HSDP loading is tested above; production checkpoint profiles still require valid
 - [x] Test weight mapping and base-component selection with small synthetic checkpoints.
 - [x] Test malformed, incomplete and unsupported checkpoints and clear error reporting.
 - [x] Compare compressed AdaLN outputs with the reference computation on small tensors, documenting tolerances.
-- [ ] Cover task/partition selection and Turbo schedule handling.
-- [ ] Run applicable official H3, single-file loader and configuration regression tests.
+- [x] Cover task/partition selection and record the tested Turbo schedule.
+- [x] Run focused H3, single-file loader, configuration and two-GPU HSDP regressions.
 - [ ] Run repository formatting and lint checks for changed files.
 
 ### 4. End-to-end generation
@@ -93,6 +93,16 @@ and output evidence.
 | --- | --- | --- | --- |
 | beta5 BF16 non-Turbo | 50-step HSDP4 functional case passed; quality A/B pending | 50-step MP4/audio generated; motion check unresolved | 50-step HSDP4 case passed; quality A/B pending |
 | beta5 BF16 Turbo | 8-step HSDP4 functional case passed; LightX2V A/B pending | 8-step MP4/audio generated; motion check unresolved | 8-step HSDP4 case passed; quality A/B pending |
+
+Both files completed all three tasks using their selected single-file DiT weights.
+Formal cases use seed 42, 1344×768 and 107 video frames with 32 kHz stereo
+audio. Non-Turbo uses 50 Euler evaluations; Turbo uses Euler/simple at 8 steps,
+within the author's recommended 4–8 range. Turbo deltas are already baked into
+the file, so no LightX2V adapter is applied to it. Both variants use the native
+H3 shifted sigma ladder with video/audio flow shifts 12/3 and guidance scale 1.
+These settings establish runnable task paths; they do not settle relative
+quality. FL2VA's first and last image conditions reach the output, but the ball
+does not show clear motion between them in the current sample.
 
 With `PYTHONPATH` pointed at this worktree, non-Turbo T2VA produced a fully
 decoded 448×256 MP4 with 107 frames and 32 kHz stereo audio at two Euler
