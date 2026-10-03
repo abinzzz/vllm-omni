@@ -55,7 +55,7 @@ the recorded host profile, not a general compatibility claim.
 - [x] Inspect checkpoint metadata, tensor names, dtypes and shapes before large downloads where possible.
 - [x] Identify which components are stored in the file and which must come from base H3.
 - [x] Read the reference implementation and document compressed AdaLN computation and parameter mapping.
-- [x] Verify both checkpoints in T2VA, FL2VA and Ref2VA; note the FL2VA motion-quality limitation below.
+- [x] Verify both checkpoints in T2VA, FL2VA and Ref2VA; inspect the controlled FL2VA motion sample.
 - [x] Record the Turbo step count, native H3 shifted-sigma settings, guidance and baked-in deltas.
 - [x] Finalize the loading interface and compatibility design from this evidence.
 
@@ -121,8 +121,8 @@ and output evidence.
 
 | Variant | T2VA | FL2VA | Ref2VA |
 | --- | --- | --- | --- |
-| beta5 BF16 non-Turbo | 50-step HSDP4 functional case passed; quality A/B pending | 50-step MP4/audio generated; motion check unresolved | 50-step HSDP4 case passed; quality A/B pending |
-| beta5 BF16 Turbo | 8-step HSDP4 functional case passed; LightX2V A/B pending | 8-step MP4/audio generated; motion check unresolved | 8-step HSDP4 case passed; quality A/B pending |
+| beta5 BF16 non-Turbo | 50-step HSDP4 functional case passed; quality A/B pending | 50-step MP4/audio generated; seed-42 toy motion observed; quality A/B pending | 50-step HSDP4 case passed; quality A/B pending |
+| beta5 BF16 Turbo | 8-step HSDP4 functional case passed; LightX2V A/B pending | 8-step MP4/audio generated; seed-42 toy motion observed; quality A/B pending | 8-step HSDP4 case passed; quality A/B pending |
 
 Both files completed all three tasks using their selected single-file DiT weights.
 Formal cases use seed 42, 1344×768 and 107 video frames with 32 kHz stereo
@@ -131,15 +131,19 @@ within the author's recommended 4–8 range. Turbo deltas are already baked into
 the file, so no LightX2V adapter is applied to it. Both variants use the native
 H3 shifted sigma ladder with video/audio flow shifts 12/3 and guidance scale 1.
 These settings establish runnable task paths; they do not settle relative
-quality. FL2VA's first and last image conditions reach the output, but the ball
-does not show clear motion between them in the current sample.
+quality. In the seed-42 toy scene, both variants show the red ball moving from
+the first-frame position toward the last-frame position. This is one controlled
+sample, not a general motion-quality claim or an official-H3 comparison.
 
 A source-path audit found no dropped-condition handoff: two FL2VA images default
 to frame indices `[0, -1]`, are VAE-encoded, enter packed non-update condition
 rows, and are reset from the condition anchor at every denoising step. The
-focused keyframe-index and packed-row regressions pass (4 cases). This verifies
-conditioning plumbing only; it does not explain or resolve the observed motion
-quality limitation.
+focused keyframe-index and packed-row regressions pass (4 cases). A separate
+seed-42 diagnostic tracks the red-object centroid at frames 0/26/53/80/106:
+non-Turbo moves from x=240.1 to 999.9 pixels, and Turbo from x=240.2 to 1000.1,
+with monotonic intermediate positions. This confirms motion in this toy sample
+only; paired quality acceptance remains pending. Evidence:
+`~/chenyb/validation/h3-a1/fl2va-motion-audit-seed42.json`.
 
 #### Serving a beta5 file
 
@@ -253,9 +257,10 @@ A formal-shape non-Turbo FL2VA case completed on commit `0ff46502` using the
 same first/last images, seed 42, 50 steps and 1344×768 HSDP4. Startup took
 167.22 s; generation, mux and write took 313.47 s. Its MP4 fully decodes to
 107 frames with 32 kHz stereo audio. The endpoints are included as conditions,
-but sampled frames show the ball staying at the initial position instead of
-moving to the last-frame position. Treat this as working image-conditioned media
-output with unresolved motion conditioning, not as FL2VA quality acceptance.
+and sampled frames show motion between those endpoints. A later five-frame
+centroid audit confirms left-to-right movement in this seed-42 toy clip. Treat
+this as functional motion evidence for one input, not as FL2VA quality
+acceptance.
 Evidence is under
 `~/chenyb/validation/h3-a1/generation/non-turbo-fl2va-qkv-direct-hsdp4-50step-1344x768/`;
 the sampled frames are in
@@ -285,9 +290,9 @@ LightX2V Turbo adapter and quality metrics remains pending.
 Turbo FL2VA also completed at seed 42, 8 steps, 1344×768 and HSDP4 using the
 same first/last images. Startup took 164.14 s; generation, mux and write took
 59.29 s. Its MP4 fully decodes with 107 frames and 32 kHz stereo audio. The
-first and last output frames preserve their corresponding input images, but the
-intermediate ball does not show clear left-to-right motion. This remains an
-unresolved motion-quality result, not FL2VA acceptance. Evidence is under
+first and last output frames preserve their corresponding input images. A later
+five-frame centroid audit confirms left-to-right motion in this seed-42 toy
+clip; it is not FL2VA quality acceptance. Evidence is under
 `~/chenyb/validation/h3-a1/generation/turbo-fl2va-qkv-direct-hsdp4-8step-1344x768/`;
 the sampled frames are in
 `~/chenyb/validation/h3-a1/frames/turbo-fl2va-qkv-direct-1344x768-contact.png`.
@@ -310,7 +315,7 @@ generation must set `PYTHONPATH` to this worktree and record the imported
 module paths before it counts toward acceptance. See the external handoff and
 logs under `~/chenyb/validation/h3-a1/` for details.
 
-- [x] Generate all six formal-shape cases above; FL2VA motion quality remains unresolved.
+- [x] Generate all six formal-shape cases above; confirm seed-42 toy-scene FL2VA motion in both variants.
 - [x] Verify MP4 decoding, dimensions, frame count, duration and audio track for every case.
 - [x] Verify that first/last-frame and reference conditioning enter the intended inference path.
 - [x] Verify actual checkpoint weight consumption for each task from the selected-file runtime manifests.
@@ -350,8 +355,8 @@ An exploratory VBench pass now covers one generated video for each beta5 variant
 and task. The table reports single-video scores for subject consistency,
 background consistency, motion smoothness and aesthetic quality, in that order;
 these are not matched-seed comparisons and do not establish that either model is
-better. Turbo FL2VA's lower subject-consistency score aligns with the unresolved
-intermediate-frame motion seen in visual review. The official H3/LightX2V A/B,
+better. Turbo FL2VA's lower subject-consistency score needs paired evaluation;
+it does not by itself establish a motion regression. The official H3/LightX2V A/B,
 LPIPS and audio-similarity evaluation remains pending. Raw per-video results and
 provenance are in `~/chenyb/validation/h3-a1/metrics/`.
 
