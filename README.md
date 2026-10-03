@@ -64,6 +64,7 @@ GPU occupancy must be checked again before each run.
 - [x] Validate the complete compressed single-file tensor schema and derive DiT configuration from file descriptors.
 - [ ] Reject unsupported A2 quantized files with actionable errors.
 - [x] Ensure the selected checkpoint supplies the DiT weights for every task; prevent silent base-DiT fallback.
+- [x] Preserve compressed AdaLN parameter dtypes in the HSDP precision policy; full-model device validation remains pending.
 - [ ] Preserve the official H3 loading path and integrate with AdaLN caching, offload and parallel loading.
 - [ ] Apply validated Turbo sampling settings without applying merged adapters a second time.
 

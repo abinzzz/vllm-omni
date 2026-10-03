@@ -105,3 +105,21 @@ def test_curve_model_checks_fp32_after_offload_restore(curve_model, parameter):
     param.data = param.data.to(torch.bfloat16)
     with pytest.raises(ValueError, match="fp32"):
         curve_model.validate_restored_host_weights()
+
+
+@pytest.mark.parametrize("compressed", [True, False])
+def test_hsdp_preserves_compressed_projection_precision(curve_model, monkeypatch, compressed):
+    from tests.diffusion.models.minimax_h3.test_minimax_h3_quantization import _small_od_config
+    from vllm_omni.diffusion.distributed import hsdp
+
+    model = curve_model if compressed else h3.MiniMaxH3DiTModel(_small_od_config(), diffusers_weights=False)
+    monkeypatch.setattr(hsdp, "get_world_group", lambda: SimpleNamespace(world_size=2, rank_in_group=0))
+    monkeypatch.setattr(hsdp, "_create_hsdp_mesh", lambda **kwargs: object())
+    context = hsdp.prepare_hsdp_shard_context(
+        model,
+        hsdp.HSDPInferenceConfig(enabled=True, hsdp_shard_size=2),
+        target_device=torch.device("cpu"),
+    )
+    # The default policy casts block parameters on all-gather. Curve projections
+    # must retain FP32, while the official dense model keeps its existing policy.
+    assert context.hsdp_kwargs["mp_policy"].param_dtype == (None if compressed else torch.bfloat16)

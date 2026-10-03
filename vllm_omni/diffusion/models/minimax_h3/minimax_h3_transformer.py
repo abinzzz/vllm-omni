@@ -1185,6 +1185,9 @@ class MiniMaxH3DiTModel(nn.Module):
         self._rope_theta = float(config_mapping.get("rope_theta", 10000.0))
         arch = MiniMaxH3DiTArchConfig.from_mapping(config_mapping)
         self.arch = arch
+        # Curve AdaLN linears are FP32 inside otherwise BF16 blocks. Preserve
+        # their storage dtype when HSDP all-gathers a block for execution.
+        self._hsdp_preserve_parameter_dtypes = arch.adaln_curve_grid is not None
         cache_config = getattr(od_config, "cache_config", {})
         enabled = (
             cache_config.get("minimax_h3_adaln_cache", True)
