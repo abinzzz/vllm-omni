@@ -66,8 +66,13 @@ GPU occupancy must be checked again before each run.
 - [x] Ensure the selected checkpoint supplies the DiT weights for every task; prevent silent base-DiT fallback.
 - [x] Preserve compressed AdaLN parameter dtypes in the HSDP precision policy; a complete small DiT forward matches unsharded execution on two GPUs.
 - [x] Bind the selected single file and curve table in host-weight plans, with FP32 restoration matching ordinary loading.
+- [x] Run ordinary HSDP checkpoint loading and cold/warm video/audio forwards on two GPUs with a synthetic compressed checkpoint.
 - [ ] Preserve the official H3 loading path and integrate with AdaLN caching, offload and parallel loading.
 - [ ] Apply validated Turbo sampling settings without applying merged adapters a second time.
+
+Pre-sharded HSDP loading currently rejects H3 checkpoints because the shared loader
+requires runtime-layout weights and cannot apply H3 tensor transforms. Ordinary
+HSDP loading is tested above; production checkpoint profiles still require validation.
 
 ### 3. Focused regression tests
 
