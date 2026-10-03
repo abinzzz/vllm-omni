@@ -122,13 +122,14 @@ LPIPS measures output differences and does not by itself establish better qualit
 No numerical quality threshold is specified in the acceptance criteria; report
 measured results and limitations without inventing a pass threshold.
 
-### 6. Final documentation and PR readiness
+### 6. Final documentation and handoff
 
 - [ ] Write verified installation and serving instructions for both checkpoint variants and all three tasks.
 - [ ] Document base-component sources, supported layouts, Turbo settings and validated deployment profiles.
 - [ ] Publish a reviewable validation report with reproduction commands and evidence locations.
 - [ ] Review checkpoint/base-component license requirements and document applicable usage conditions.
-- [ ] Review the scoped diff and prepare the A1 PR with environment, test results and remaining limitations.
+- [ ] Review the scoped diff and prepare a handoff with environment, test results and remaining limitations.
+  The contributor will open the PR and post comments.
 - [ ] After all A1 acceptance work is complete, replace this temporary TODO with final usage documentation
   and a serving-recipe link; remove machine-specific development notes from the README.
 
