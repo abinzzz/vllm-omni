@@ -60,6 +60,7 @@ GPU occupancy must be checked again before each run.
 - [x] Implement FP32 curve interpolation and compressed projection primitives, with endpoint and dense-path regression tests.
 - [x] Select curve time embeddings in the native DiT, load the stored table, and check FP32 invariants after host-weight restore.
 - [ ] Map and validate checkpoint weights, rejecting unsupported layouts and unexpected missing parameters.
+- [x] Validate the complete compressed single-file tensor schema and derive DiT configuration from file descriptors.
 - [ ] Reject unsupported A2 quantized files with actionable errors.
 - [ ] Ensure the selected checkpoint supplies the DiT weights for every task; prevent silent base-DiT fallback.
 - [ ] Preserve the official H3 loading path and integrate with AdaLN caching, offload and parallel loading.
