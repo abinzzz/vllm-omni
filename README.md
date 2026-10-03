@@ -103,6 +103,12 @@ HSDP loading is tested above; production checkpoint profiles still require valid
 - [x] Run focused H3, single-file loader, configuration and two-GPU HSDP regressions.
 - [x] Run repository formatting and lint checks for changed files.
 
+The latest host-side CPU regression run covered the single-file schema/dispatch,
+AdaLN modulation, H3 contracts and packed conditioning: 290 passed and 3 were
+skipped. The log is in `~/chenyb/validation/h3-a1/current-broad-cpu-regression.log`.
+An initial in-sandbox run could not allocate localhost sockets and left platform
+fixtures uninitialized; it is not counted as a code failure.
+
 ### 4. End-to-end generation
 
 Start with small-shape smoke tests, then repeat at the recorded acceptance shapes.
