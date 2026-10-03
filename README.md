@@ -91,7 +91,7 @@ and output evidence.
 
 | Variant | T2VA | FL2VA | Ref2VA |
 | --- | --- | --- | --- |
-| beta5 BF16 non-Turbo | 50-step HSDP4 functional case passed; quality A/B pending | Pending | Pending |
+| beta5 BF16 non-Turbo | 50-step HSDP4 functional case passed; quality A/B pending | HSDP4 2-step smoke passed; formal validation pending | HSDP4 2-step smoke passed; formal validation pending |
 | beta5 BF16 Turbo | Pending | Pending | Pending |
 
 With `PYTHONPATH` pointed at this worktree, non-Turbo T2VA produced a fully
@@ -138,6 +138,16 @@ These are functional checks for one non-Turbo T2VA input, not the required
 fixed-seed quality A/B or full A1 acceptance. Temporary instrumentation has
 been removed; the pre-fix and fixed-run manifests and logs are retained under
 `~/chenyb/validation/h3-a1/`.
+
+Non-Turbo FL2VA and Ref2VA conditioning smokes also passed on commit
+`6c0021ac`. Both used seed 42, 448×256, 2 steps and HSDP4. FL2VA consumed the
+suite's first and last synthetic frames; Ref2VA consumed its first frame. Each
+produced a fully decoded 107-frame MP4 with 32 kHz stereo audio; generation,
+mux and write took 9.69 s and 9.30 s respectively. These small-step cases
+verify request routing and media output only. Manifests, inputs, logs and videos
+are under `~/chenyb/validation/h3-a1/generation/` and
+`~/chenyb/validation/h3-a1/inputs/`; formal-shape runs and quality comparisons
+remain pending.
 
 An earlier acceptance-shape run produced three 1344×768, 50-step MP4s, but the
 runner imported vLLM-Omni from the separate Mammoth editable checkout instead
