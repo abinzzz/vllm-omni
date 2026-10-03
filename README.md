@@ -91,7 +91,7 @@ and output evidence.
 
 | Variant | T2VA | FL2VA | Ref2VA |
 | --- | --- | --- | --- |
-| beta5 BF16 non-Turbo | 50-step HSDP4 functional case passed; quality A/B pending | HSDP4 2-step smoke passed; formal validation pending | HSDP4 2-step smoke passed; formal validation pending |
+| beta5 BF16 non-Turbo | 50-step HSDP4 functional case passed; quality A/B pending | 50-step MP4/audio generated; motion check unresolved | HSDP4 2-step smoke passed; formal validation pending |
 | beta5 BF16 Turbo | Pending | Pending | Pending |
 
 With `PYTHONPATH` pointed at this worktree, non-Turbo T2VA produced a fully
@@ -148,6 +148,18 @@ verify request routing and media output only. Manifests, inputs, logs and videos
 are under `~/chenyb/validation/h3-a1/generation/` and
 `~/chenyb/validation/h3-a1/inputs/`; formal-shape runs and quality comparisons
 remain pending.
+
+A formal-shape non-Turbo FL2VA case completed on commit `0ff46502` using the
+same first/last images, seed 42, 50 steps and 1344×768 HSDP4. Startup took
+167.22 s; generation, mux and write took 313.47 s. Its MP4 fully decodes to
+107 frames with 32 kHz stereo audio. The endpoints are included as conditions,
+but sampled frames show the ball staying at the initial position instead of
+moving to the last-frame position. Treat this as working image-conditioned media
+output with unresolved motion conditioning, not as FL2VA quality acceptance.
+Evidence is under
+`~/chenyb/validation/h3-a1/generation/non-turbo-fl2va-qkv-direct-hsdp4-50step-1344x768/`;
+the sampled frames are in
+`~/chenyb/validation/h3-a1/frames/non-turbo-fl2va-qkv-direct-1344x768-contact.png`.
 
 An earlier acceptance-shape run produced three 1344×768, 50-step MP4s, but the
 runner imported vLLM-Omni from the separate Mammoth editable checkout instead
