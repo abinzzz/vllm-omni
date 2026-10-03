@@ -340,6 +340,12 @@ are dimension scores, not a full standard-suite VBench aggregate. Actual
 matched-seed A/B results remain pending. Protocol and self-check evidence are in
 `~/chenyb/validation/h3-a1/METRIC_PROTOCOL.md`.
 
+The three-seed comparison plan has been generated and its inputs and paths
+validated: 36 generation commands, 18 matched metric pairs and 36 VBench jobs.
+The plan is at `~/chenyb/validation/h3-a1/evaluation-20261003/evaluation-plan.json`;
+none of those model jobs has been executed pending confirmation of the host's
+permitted license territory.
+
 An exploratory VBench pass now covers one generated video for each beta5 variant
 and task. The table reports single-video scores for subject consistency,
 background consistency, motion smoothness and aesthetic quality, in that order;
