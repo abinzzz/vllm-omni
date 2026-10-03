@@ -121,3 +121,40 @@ def test_inspect_accepts_curve_without_optional_adapter_basis(tmp_path, checkpoi
     path = tmp_path / "comfy.safetensors"
     save_file(checkpoint_tensors, path)
     assert MiniMaxH3SingleFileSpec.from_file(path).transformer_config["time_embed_dim"] == 2
+
+
+@pytest.mark.parametrize("model_class", ["MiniMaxH3Pipeline", "MiniMaxH3ModularPipeline"])
+def test_single_file_config_preserves_h3_architecture_and_reference_inputs(tmp_path, checkpoint_tensors, model_class):
+    from vllm_omni.diffusion.data import OmniDiffusionConfig
+
+    path = tmp_path / "hybrid.safetensors"
+    save_file(checkpoint_tensors, path)
+    config = OmniDiffusionConfig(model=str(path), model_class_name=model_class)
+    config.enrich_config()
+    assert config.model_class_name == "MiniMaxH3Pipeline"
+    assert config.diffusion_load_format == "default"
+    assert config.tf_model_config.to_dict()["adaln_curve_grid"] == 3
+    assert config.tf_model_config.to_dict()["hidden_size"] == 8
+    assert config.supports_multimodal_inputs
+    assert config.supports_mixed_reference_inputs
+
+
+def test_single_file_resolves_serving_stage_without_hub_discovery(tmp_path, checkpoint_tensors, monkeypatch):
+    from vllm_omni.config.config_factory import StageConfigFactory
+    from vllm_omni.config.resolver import resolve_omni_config
+
+    def unexpected_discovery(*args, **kwargs):
+        pytest.fail("single-file H3 must not resolve its local filename as a Hub repository")
+
+    monkeypatch.setattr(StageConfigFactory, "create_from_model", unexpected_discovery)
+    path = tmp_path / "hybrid.safetensors"
+    save_file(checkpoint_tensors, path)
+    resolved = resolve_omni_config(
+        str(path),
+        trust_remote_code=False,
+        deploy_config_path=None,
+        cli_overrides={"model_class_name": "MiniMaxH3Pipeline"},
+        stage_overrides=None,
+        strategy_config_path=None,
+    )
+    assert len(resolved.stage_configs) == 1

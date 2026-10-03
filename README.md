@@ -55,6 +55,7 @@ GPU occupancy must be checked again before each run.
 ### 2. Loader and model implementation
 
 - [ ] Reuse the native single-file entrypoint and existing component loading mechanisms where applicable.
+- [x] Register native H3 single-file configuration and preserve multimodal/reference-input metadata.
 - [ ] Resolve the base repository separately from the checkpoint and load only the required base components.
 - [ ] Construct and execute the compressed AdaLN layout without expanding it into a full dense projection.
 - [x] Implement FP32 curve interpolation and compressed projection primitives, with endpoint and dense-path regression tests.
