@@ -34,13 +34,20 @@ support belongs to A2 and is outside this checklist.
 - [x] Create an isolated worktree and A1 branch from the fetched upstream main.
 - [x] Verify GPU discovery outside the sandbox: 8 L40S GPUs; PyTorch reports CUDA available.
 - [x] Run the existing modulation CPU baseline: 6 passed, 4 deselected.
-- [ ] Establish a compatible complete inference environment, including compiled vLLM extensions.
+- [x] Establish a compatible complete inference environment, including compiled vLLM extensions.
 - [x] Inventory checkpoint storage requirements and available GPUs before downloads or inference.
 
 The CPU baseline only checks existing behavior; it is not evidence of A1 support.
 Machine-specific logs and environment notes live outside the repository in
 `~/chenyb/validation/h3-a1/`, including `HANDOFF.md` and `baseline-modulation.log`.
 GPU occupancy must be checked again before each run.
+
+The validated host environment imports this worktree, reports CUDA available
+with eight devices, and loads the compiled `vllm._C_stable_libtorch` extension.
+It uses vLLM-Omni `0.29.0rc2.dev46` with vLLM `0.30.0+cu129`; Omni emits a
+minor-version mismatch warning. All six H3 functional cases and the focused
+HSDP/offload regressions ran in this environment. This evidence is specific to
+the recorded host profile, not a general compatibility claim.
 
 ### 1. Checkpoint and reference investigation
 
