@@ -14,7 +14,7 @@ from vllm_omni.platforms import current_omni_platform
 pytestmark = [pytest.mark.core_model, pytest.mark.diffusion, pytest.mark.cuda]
 
 
-def _projection_worker(rank, world_size, rendezvous):
+def _projection_worker(rank, world_size, rendezvous, curve_weights):
     from vllm.config import DeviceConfig, VllmConfig, set_current_vllm_config
     from vllm.distributed.parallel_state import (
         cleanup_dist_env_and_memory,
@@ -23,6 +23,7 @@ def _projection_worker(rank, world_size, rendezvous):
     )
 
     from vllm_omni.diffusion.models.minimax_h3.adaln_cache import MiniMaxH3RuntimeAdalnCache
+    from vllm_omni.diffusion.models.minimax_h3.adaln_curve import MiniMaxH3AdalnCurve
     from vllm_omni.diffusion.models.minimax_h3.minimax_h3_transformer import (
         MiniMaxH3AdalnProj,
         MiniMaxH3DiTArchConfig,
@@ -43,9 +44,17 @@ def _projection_worker(rank, world_size, rendezvous):
         )
         initialize_model_parallel(tensor_model_parallel_size=world_size)
         try:
-            arch = MiniMaxH3DiTArchConfig(hidden_size=256, time_embed_dim=128)
+            arch = MiniMaxH3DiTArchConfig(
+                hidden_size=256,
+                time_embed_dim=8 if curve_weights else 128,
+                adaln_curve_grid=1025 if curve_weights else None,
+            )
             cache = MiniMaxH3RuntimeAdalnCache()
             generator = torch.Generator(device=device).manual_seed(11)
+            curve = None
+            if curve_weights:
+                curve = MiniMaxH3AdalnCurve(1025, arch.time_embed_dim).to(device)
+                curve.table.data.copy_(torch.randn(1025, arch.time_embed_dim, device=device, generator=generator))
             for name, expansion, modalities in (("blocks.0", 6, 3), ("final_layer", 2, 1)):
                 cache.clear()
                 projection = MiniMaxH3AdalnProj(
@@ -62,7 +71,11 @@ def _projection_worker(rank, world_size, rendezvous):
                         parameter.normal_(std=0.05, generator=generator)
                 with torch.inference_mode():
                     for width in (1, 2, 3, 4):
-                        embedding = torch.randn(width, arch.time_embed_dim, device=device, generator=generator)
+                        embedding = (
+                            torch.randn(width, arch.time_embed_dim, device=device, generator=generator)
+                            if curve is None
+                            else curve(torch.linspace(0, 1, width, device=device))
+                        )
                         # No prepared input: run the original vLLM projector.
                         cache.clear()
                         expected = projection(embedding)
@@ -106,12 +119,13 @@ def _projection_worker(rank, world_size, rendezvous):
         pytest.param(2, marks=hardware_marks(res={"cuda": ["H100", "B200"]}, num_cards=2)),
     ],
 )
-def test_real_projection_cache_parity_and_rank_local_invalidation(tmp_path, world_size):
+@pytest.mark.parametrize("curve_weights", [False, True], ids=["dense", "compressed"])
+def test_real_projection_cache_parity_and_rank_local_invalidation(tmp_path, world_size, curve_weights):
     if not current_omni_platform.is_cuda():
         pytest.skip("Requires CUDA")
     context = mp.spawn(
         _projection_worker,
-        args=(world_size, str(tmp_path / "rendezvous")),
+        args=(world_size, str(tmp_path / "rendezvous"), curve_weights),
         nprocs=world_size,
         join=False,
     )

@@ -57,7 +57,7 @@ GPU occupancy must be checked again before each run.
 - [x] Reuse the native single-file entrypoint and existing component loading mechanisms where applicable.
 - [x] Register native H3 single-file configuration and preserve multimodal/reference-input metadata.
 - [x] Resolve the base repository separately from the checkpoint and load only the required base components.
-- [ ] Construct and execute the compressed AdaLN layout without expanding it into a full dense projection.
+- [x] Construct and execute the compressed AdaLN layout without expanding it into a full dense projection.
 - [x] Implement FP32 curve interpolation and compressed projection primitives, with endpoint and dense-path regression tests.
 - [x] Select curve time embeddings in the native DiT, load the stored table, and check FP32 invariants after host-weight restore.
 - [ ] Map and validate checkpoint weights, rejecting unsupported layouts and unexpected missing parameters.
@@ -71,7 +71,7 @@ GPU occupancy must be checked again before each run.
 
 - [x] Test weight mapping and base-component selection with small synthetic checkpoints.
 - [x] Test malformed, incomplete and unsupported checkpoints and clear error reporting.
-- [ ] Compare compressed AdaLN outputs with the reference computation on small tensors, documenting tolerances.
+- [x] Compare compressed AdaLN outputs with the reference computation on small tensors, documenting tolerances.
 - [ ] Cover task/partition selection and Turbo schedule handling.
 - [ ] Run applicable official H3, single-file loader and configuration regression tests.
 - [ ] Run repository formatting and lint checks for changed files.
