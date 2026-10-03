@@ -91,8 +91,15 @@ and output evidence.
 
 | Variant | T2VA | FL2VA | Ref2VA |
 | --- | --- | --- | --- |
-| beta5 BF16 non-Turbo | Pending | Pending | Pending |
+| beta5 BF16 non-Turbo | Smoke passed; acceptance pending | Pending | Pending |
 | beta5 BF16 Turbo | Pending | Pending | Pending |
+
+The non-Turbo T2VA smoke produced a decoded 448×256 MP4 with 107 frames
+and 32 kHz stereo audio at two Euler evaluations on two L40S GPUs with TP2
+and rank-local DLO. Request time including mux/write was 11.69 s, excluding
+129.88 s startup. This is a smoke result, not an acceptance-shape quality claim.
+Engine shutdown logged cleanup timeouts, but host checks confirmed workers
+exited and GPU memory was released; lifecycle validation remains pending.
 
 - [ ] Complete all six generation cases above.
 - [ ] Verify MP4 decoding, dimensions, frame count, duration and audio track for every case.
