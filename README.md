@@ -44,13 +44,13 @@ GPU occupancy must be checked again before each run.
 
 ### 1. Checkpoint and reference investigation
 
-- [ ] Pin beta5 BF16 Turbo/non-Turbo filenames, revisions and checksums, and base H3 component revisions.
+- [x] Pin beta5 BF16 Turbo/non-Turbo filenames, revisions and checksums, and base H3 component revisions.
 - [x] Inspect checkpoint metadata, tensor names, dtypes and shapes before large downloads where possible.
 - [x] Identify which components are stored in the file and which must come from base H3.
-- [ ] Read the reference implementation and document compressed AdaLN computation and parameter mapping.
+- [x] Read the reference implementation and document compressed AdaLN computation and parameter mapping.
 - [ ] Verify how each checkpoint supports T2VA, FL2VA and Ref2VA, including partition-specific differences.
 - [ ] Confirm Turbo step counts, sigma schedules, guidance settings and already-merged adapters.
-- [ ] Finalize the loading interface and compatibility design from this evidence.
+- [x] Finalize the loading interface and compatibility design from this evidence.
 
 ### 2. Loader and model implementation
 
@@ -60,9 +60,9 @@ GPU occupancy must be checked again before each run.
 - [x] Construct and execute the compressed AdaLN layout without expanding it into a full dense projection.
 - [x] Implement FP32 curve interpolation and compressed projection primitives, with endpoint and dense-path regression tests.
 - [x] Select curve time embeddings in the native DiT, load the stored table, and check FP32 invariants after host-weight restore.
-- [ ] Map and validate checkpoint weights, rejecting unsupported layouts and unexpected missing parameters.
+- [x] Map and validate checkpoint weights, rejecting unsupported layouts and unexpected missing parameters.
 - [x] Validate the complete compressed single-file tensor schema and derive DiT configuration from file descriptors.
-- [ ] Reject unsupported A2 quantized files with actionable errors.
+- [x] Reject unsupported A2 quantized files with actionable errors.
 - [x] Ensure the selected checkpoint supplies the DiT weights for every task; prevent silent base-DiT fallback.
 - [x] Preserve compressed AdaLN parameter dtypes in the HSDP precision policy; a complete small DiT forward matches unsharded execution on two GPUs.
 - [x] Bind the selected single file and curve table in host-weight plans, with FP32 restoration matching ordinary loading.
