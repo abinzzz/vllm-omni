@@ -92,7 +92,7 @@ and output evidence.
 | Variant | T2VA | FL2VA | Ref2VA |
 | --- | --- | --- | --- |
 | beta5 BF16 non-Turbo | 50-step HSDP4 functional case passed; quality A/B pending | 50-step MP4/audio generated; motion check unresolved | 50-step HSDP4 case passed; quality A/B pending |
-| beta5 BF16 Turbo | 8-step HSDP4 functional case passed; LightX2V A/B pending | Pending | Pending |
+| beta5 BF16 Turbo | 8-step HSDP4 functional case passed; LightX2V A/B pending | 8-step MP4/audio generated; motion check unresolved | Pending |
 
 With `PYTHONPATH` pointed at this worktree, non-Turbo T2VA produced a fully
 decoded 448×256 MP4 with 107 frames and 32 kHz stereo audio at two Euler
@@ -181,6 +181,16 @@ Evidence is under
 `~/chenyb/validation/h3-a1/generation/turbo-t2va-qkv-direct-hsdp4-8step-1344x768/`.
 This is a functional check only; comparison against official H3 with the
 LightX2V Turbo adapter and quality metrics remains pending.
+
+Turbo FL2VA also completed at seed 42, 8 steps, 1344×768 and HSDP4 using the
+same first/last images. Startup took 164.14 s; generation, mux and write took
+59.29 s. Its MP4 fully decodes with 107 frames and 32 kHz stereo audio. The
+first and last output frames preserve their corresponding input images, but the
+intermediate ball does not show clear left-to-right motion. This remains an
+unresolved motion-quality result, not FL2VA acceptance. Evidence is under
+`~/chenyb/validation/h3-a1/generation/turbo-fl2va-qkv-direct-hsdp4-8step-1344x768/`;
+the sampled frames are in
+`~/chenyb/validation/h3-a1/frames/turbo-fl2va-qkv-direct-1344x768-contact.png`.
 
 An earlier acceptance-shape run produced three 1344×768, 50-step MP4s, but the
 runner imported vLLM-Omni from the separate Mammoth editable checkout instead
