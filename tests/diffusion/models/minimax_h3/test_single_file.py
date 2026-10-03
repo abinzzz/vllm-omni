@@ -172,6 +172,7 @@ def test_pipeline_loads_selected_file_for_each_task(tmp_path, checkpoint_tensors
     from tests.diffusion.models.minimax_h3.test_minimax_h3_quantization import _FakeAttention
     from vllm_omni.diffusion.data import OmniDiffusionConfig
     from vllm_omni.diffusion.model_loader.diffusers_loader import DiffusersPipelineLoader
+    from vllm_omni.diffusion.model_loader.host_weight_plan import build_checkpoint_binding_plan
     from vllm_omni.diffusion.models.minimax_h3 import minimax_h3_transformer as h3
     from vllm_omni.diffusion.models.minimax_h3 import pipeline_minimax_h3 as pipeline_module
 
@@ -194,6 +195,7 @@ def test_pipeline_loads_selected_file_for_each_task(tmp_path, checkpoint_tensors
             json.dumps({"_minimax_h3": {"partition": partition.lower(), "tasks": tasks}})
         )
     checkpoint_tensors["adaln_t_table"] = torch.tensor([[0, 4], [2, 8], [10, -4]], dtype=torch.bfloat16)
+    checkpoint_tensors["blocks.0.attn.qkv_proj.weight"] = torch.arange(192).reshape(24, 8).to(torch.bfloat16)
     path = tmp_path / "hybrid[beta5].safetensors"
     save_file(checkpoint_tensors, path)
     if as_symlink:
@@ -201,7 +203,10 @@ def test_pipeline_loads_selected_file_for_each_task(tmp_path, checkpoint_tensors
         blob.parent.mkdir()
         path.rename(blob)
         path.symlink_to(blob)
-    save_file({"unrelated": torch.ones(1)}, tmp_path / "unrelated.safetensors")
+    save_file(checkpoint_tensors, tmp_path / "unrelated.safetensors")
+    (tmp_path / "model.safetensors.index.json").write_text(
+        json.dumps({"weight_map": {key: "unrelated.safetensors" for key in checkpoint_tensors}})
+    )
     config = OmniDiffusionConfig(
         model=str(path),
         model_class_name="MiniMaxH3Pipeline",
@@ -223,6 +228,22 @@ def test_pipeline_loads_selected_file_for_each_task(tmp_path, checkpoint_tensors
     assert "transformer.time_embedder.table" in loaded
     assert all(source.model_or_path == str(path.parent) for source in sources)
     assert set(component_paths) == {str(base / "FL2VA" / component) for component in ("video_vae", "audio_vae")}
+    result = build_checkpoint_binding_plan(
+        pipeline,
+        dit_modules=tuple((name, getattr(pipeline, name)) for name in pipeline._dit_modules),
+        sources=sources,
+        model_path=str(path),
+        tensor_parallel_size=1,
+        online_quantization=False,
+    )
+    assert result.plan is not None, result.fallback_reason
+    targets = dict(pipeline.named_parameters()) | dict(pipeline.named_buffers())
+    for name, binding in result.plan.bindings.items():
+        assert binding.file_path == str(path)
+        stored = checkpoint_tensors[binding.checkpoint_key]
+        restored = stored if binding.transform is None else binding.transform(stored)
+        assert restored.dtype == targets[name].dtype
+        torch.testing.assert_close(restored, targets[name], rtol=0, atol=0)
 
 
 @pytest.mark.parametrize("partition", ["fl2va", "ref2va", "combined"])

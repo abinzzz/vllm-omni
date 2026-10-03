@@ -1174,6 +1174,17 @@ class MiniMaxH3Pipeline(
             enable_diffusion_pipeline_profiler=(od_config.enable_diffusion_pipeline_profiler)
         )
 
+    def remap_checkpoint_key(self, name: str) -> str | None:
+        """Expose curve keys to loader-owned host-weight binding plans."""
+        prefix, _, key = name.partition(".")
+        transformer = getattr(self, prefix, None)
+        if isinstance(transformer, MiniMaxH3DiTModel) and transformer.arch.adaln_curve_grid is not None:
+            if key == "adaln_t_table":
+                return f"{prefix}.time_embedder.table"
+            if key in {"adaln_basis", "adaln_mean"}:
+                return None
+        return name
+
     def load_weights(
         self,
         weights: Iterable[tuple[str, torch.Tensor]],

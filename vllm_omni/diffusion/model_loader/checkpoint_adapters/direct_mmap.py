@@ -29,6 +29,12 @@ class DirectMmapAdapter(Protocol):
     ) -> DirectMmapTensorPolicy | None: ...
 
 
+def _restore_h3_fp32(weight: torch.Tensor, *, transform: Callable | None = None) -> torch.Tensor:
+    if transform is not None:
+        weight = transform(weight)
+    return weight.float()
+
+
 class _MiniMaxH3DirectMmapAdapter:
     """TP1 runtime-layout contract already enforced by MiniMax-H3's loader."""
 
@@ -40,7 +46,6 @@ class _MiniMaxH3DirectMmapAdapter:
         runtime_name: str,
         target: torch.Tensor,
     ) -> DirectMmapTensorPolicy:
-        del target
         transform = None
         suffix = ".qkv_proj.weight"
         if runtime_name.endswith(suffix):
@@ -62,6 +67,11 @@ class _MiniMaxH3DirectMmapAdapter:
                 heads_per_group=1,
                 head_dim=attention.head_dim,
             )
+        if target.dtype == torch.float32:
+            # Native loading copies stored BF16 tensors into H3's FP32 heads,
+            # norms and compressed curve projections. Prove the same conversion
+            # for consumers that bypass the ordinary weight loader.
+            transform = partial(_restore_h3_fp32, transform=transform)
         return DirectMmapTensorPolicy(
             allow_custom_loader=True,
             transform=transform,
