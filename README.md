@@ -92,7 +92,7 @@ and output evidence.
 | Variant | T2VA | FL2VA | Ref2VA |
 | --- | --- | --- | --- |
 | beta5 BF16 non-Turbo | 50-step HSDP4 functional case passed; quality A/B pending | 50-step MP4/audio generated; motion check unresolved | 50-step HSDP4 case passed; quality A/B pending |
-| beta5 BF16 Turbo | 8-step HSDP4 functional case passed; LightX2V A/B pending | 8-step MP4/audio generated; motion check unresolved | Pending |
+| beta5 BF16 Turbo | 8-step HSDP4 functional case passed; LightX2V A/B pending | 8-step MP4/audio generated; motion check unresolved | 8-step HSDP4 case passed; quality A/B pending |
 
 With `PYTHONPATH` pointed at this worktree, non-Turbo T2VA produced a fully
 decoded 448×256 MP4 with 107 frames and 32 kHz stereo audio at two Euler
@@ -191,6 +191,16 @@ unresolved motion-quality result, not FL2VA acceptance. Evidence is under
 `~/chenyb/validation/h3-a1/generation/turbo-fl2va-qkv-direct-hsdp4-8step-1344x768/`;
 the sampled frames are in
 `~/chenyb/validation/h3-a1/frames/turbo-fl2va-qkv-direct-1344x768-contact.png`.
+
+Turbo Ref2VA completed at seed 42, 8 steps and 1344×768 HSDP4 using the suite's
+first image. Startup took 179.57 s; generation, mux and write took 55.28 s. The
+MP4 fully decodes with 107 frames and 32 kHz stereo audio; sampled frames retain
+the reference scene and show the ball moving across the shot. Evidence is under
+`~/chenyb/validation/h3-a1/generation/turbo-ref2va-qkv-direct-hsdp4-8step-1344x768/`;
+the contact sheet is
+`~/chenyb/validation/h3-a1/frames/turbo-ref2va-qkv-direct-1344x768-contact.png`.
+This is functional evidence for one reference case; official H3/LightX2V quality
+comparisons and broader input coverage remain pending.
 
 An earlier acceptance-shape run produced three 1344×768, 50-step MP4s, but the
 runner imported vLLM-Omni from the separate Mammoth editable checkout instead
