@@ -124,6 +124,13 @@ These settings establish runnable task paths; they do not settle relative
 quality. FL2VA's first and last image conditions reach the output, but the ball
 does not show clear motion between them in the current sample.
 
+A source-path audit found no dropped-condition handoff: two FL2VA images default
+to frame indices `[0, -1]`, are VAE-encoded, enter packed non-update condition
+rows, and are reset from the condition anchor at every denoising step. The
+focused keyframe-index and packed-row regressions pass (4 cases). This verifies
+conditioning plumbing only; it does not explain or resolve the observed motion
+quality limitation.
+
 #### Serving a beta5 file
 
 This branch accepts a local beta5 BF16 safetensors file as the model argument;
