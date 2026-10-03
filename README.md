@@ -77,6 +77,18 @@ the recorded host profile, not a general compatibility claim.
 - [ ] Preserve the official H3 loading path and integrate with AdaLN caching, offload and parallel loading.
 - [x] Run Turbo with a documented author-recommended sampler/step setting without reapplying merged deltas.
 
+The native grouped-checkpoint path retains its existing transformer source,
+QKV row reordering and AdaLN sidecar eligibility; the single-file logic is
+gated on a regular local file. A synthetic CUDA regression on two L40S GPUs
+passed the dense and compressed-AdaLN runtime-projection-cache cases at TP1
+and TP2, including warm-cache parity and rebuilding the collective after one
+rank invalidates its local cache. The compressed cache test did not load H3
+weights. Beta5 itself has successful HSDP4 functional runs and one small TP2 +
+DLO T2VA smoke, while a synthetic HSDP two-GPU load/forward test passed. This
+does not establish official H3 checkpoint loading in the current environment
+or complete the production offload/parallelism matrix; see
+`~/chenyb/validation/h3-a1/PROFILE_MATRIX.md`.
+
 Pre-sharded HSDP loading currently rejects H3 checkpoints because the shared loader
 requires runtime-layout weights and cannot apply H3 tensor transforms. Ordinary
 HSDP loading is tested above; production checkpoint profiles still require validation.
