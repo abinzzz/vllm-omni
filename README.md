@@ -102,12 +102,21 @@ and output evidence.
 
 ### 5. Fixed-seed quality and latency evaluation
 
-- [ ] Define a reproducible prompt/input suite, seeds, shapes, sampling settings and metric implementations.
+- [x] Define a reproducible prompt/input suite, seeds, shapes, sampling settings and metric implementations.
 - [ ] Run non-Turbo against official H3 and Turbo against official H3 plus LightX2V Turbo.
 - [ ] Report LPIPS, audio similarity and VBench, with metric versions and preprocessing documented.
 - [ ] Report end-to-end seconds per request with hardware, warmup policy, repetitions and timing boundaries.
 - [ ] Preserve side-by-side videos and per-example results, including failures and quality regressions.
 - [ ] Record model/code revisions, environment, commands and artifact locations for reproduction.
+
+The prepared suite uses three deterministic toy scenes with seeds 42/2026/7
+at 1344×768 and 24 FPS, with matching inputs across each task and A/B pair.
+Metrics are all-frame AlexNet LPIPS v0.1, stereo/mono CLAP embedding cosine,
+and four preselected VBench custom-input dimensions: subject consistency,
+background consistency, motion smoothness and aesthetic quality. The latter
+are dimension scores, not a full standard-suite VBench aggregate. Actual
+checkpoint results remain pending. Protocol and self-check evidence are in
+`~/chenyb/validation/h3-a1/METRIC_PROTOCOL.md`.
 
 LPIPS measures output differences and does not by itself establish better quality.
 No numerical quality threshold is specified in the acceptance criteria; report
