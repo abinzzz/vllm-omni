@@ -111,6 +111,57 @@ These settings establish runnable task paths; they do not settle relative
 quality. FL2VA's first and last image conditions reach the output, but the ball
 does not show clear motion between them in the current sample.
 
+#### Serving a beta5 file
+
+This branch accepts a local beta5 BF16 safetensors file as the model argument;
+the file supplies the DiT while the selected base H3 revision supplies the
+tokenizer, text encoder, and audio/video VAEs. Review the checkpoint and base
+model licenses above before downloading or serving them. Use a separate server
+for each beta5 file. The following HSDP4 configuration matches the tested
+1344×768 generation profile; the single-file pipeline and task routing were
+verified through `Omni.generate`, but an HTTP `/v1/videos` server request has
+not yet been run on this host.
+
+```bash
+export CHECKPOINT=/path/to/10Eros_Max_h3_hybrid_beta5.safetensors
+export BASE_MODEL=MiniMaxAI/MiniMax-H3
+export BASE_REVISION=42ed227ee7df40d41602854ae760620d6eb651fe
+export PORT=8091
+
+CUDA_VISIBLE_DEVICES=0,1,2,3 \
+VLLM_WORKER_MULTIPROC_METHOD=spawn \
+vllm serve "${CHECKPOINT}" \
+  --omni \
+  --host 0.0.0.0 \
+  --port "${PORT}" \
+  --trust-remote-code \
+  --task-type auto \
+  --custom-pipeline-args "{\"base_model\":\"${BASE_MODEL}\",\"base_revision\":\"${BASE_REVISION}\"}" \
+  --num-gpus 4 \
+  --tensor-parallel-size 1 \
+  --text-encoder-tp-size 4 \
+  --vae-patch-parallel-size 4 \
+  --vae-parallel-mode tile \
+  --vae-use-tiling \
+  --usp 4 \
+  --ring 1 \
+  --use-hsdp \
+  --hsdp-shard-size 4 \
+  --hsdp-replicate-size 1 \
+  --enforce-eager \
+  --diffusion-attention-backend CUDNN_ATTN
+```
+
+For beta5 Turbo, set `CHECKPOINT` to
+`10Eros_Max_h3_TURBO-hybrid_beta5.safetensors`. The merged Turbo file already
+contains its deltas: use 8 Euler steps, guidance 1, and video/audio shifts
+12/3; do not attach the LightX2V adapter. For non-Turbo, the validated
+acceptance-shape setting is 50 Euler steps with the same guidance and shifts.
+The server's `/v1/videos/sync` request chooses `t2va`, `fl2va`, or `ref2va` in
+`extra_params.task`; see the [H3 recipe's HTTP examples](recipes/MiniMaxAI/MiniMax-H3.md#http-api-examples)
+for request forms and media-input fields. The selected checkpoint and base
+component revision are recorded in each generation manifest outside this repo.
+
 With `PYTHONPATH` pointed at this worktree, non-Turbo T2VA produced a fully
 decoded 448×256 MP4 with 107 frames and 32 kHz stereo audio at two Euler
 evaluations on two L40S GPUs using TP2 and rank-local DLO. Request time including
