@@ -64,3 +64,44 @@ def test_dense_projection_keeps_original_silu_and_bf16():
     )
     assert proj.linear.weight.dtype == torch.bfloat16
     torch.testing.assert_close(torch.cat(proj(coords), dim=-1), expected, rtol=0, atol=0)
+
+
+@pytest.fixture
+def curve_model(monkeypatch):
+    from tests.diffusion.models.minimax_h3.test_minimax_h3_quantization import _FakeAttention, _small_od_config
+
+    monkeypatch.setattr(h3, "Attention", _FakeAttention)
+    config = _small_od_config()
+    config.tf_model_config.update(time_embed_dim=2, adaln_curve_grid=3)
+    return h3.MiniMaxH3DiTModel(config, diffusers_weights=False)
+
+
+def test_native_curve_model_loads_table_and_uses_it_for_time_embeddings(curve_model):
+    table = torch.tensor([[0, 4], [2, 8], [10, -4]], dtype=torch.bfloat16)
+    loaded = curve_model.load_weights(
+        [
+            ("adaln_t_table", table),
+            ("adaln_basis", torch.ones(2, 4, dtype=torch.bfloat16)),
+            ("adaln_mean", torch.ones(4, dtype=torch.bfloat16)),
+        ]
+    )
+    assert loaded == {"time_embedder.table"}
+    assert curve_model.time_embedder.table.dtype == torch.float32
+    assert not hasattr(curve_model.time_embedder, "proj_in")
+    expected = torch.tensor([[1, 6], [10, -4]], dtype=torch.float32)
+    torch.testing.assert_close(curve_model.time_embedder(torch.tensor([0.25, 1.0])), expected, rtol=0, atol=0)
+    curve_model.post_load_weights()
+
+
+def test_native_curve_model_rejects_unknown_weights(curve_model):
+    with pytest.raises(ValueError, match="unsupported.*curve"):
+        curve_model.load_weights([("adaln_t_tabel", torch.zeros(3, 2))])
+
+
+@pytest.mark.parametrize("parameter", ["time_embedder.table", "blocks.0.adaln_proj.linear.weight"])
+def test_curve_model_checks_fp32_after_offload_restore(curve_model, parameter):
+    param = dict(curve_model.named_parameters()).get(parameter)
+    assert param is not None
+    param.data = param.data.to(torch.bfloat16)
+    with pytest.raises(ValueError, match="fp32"):
+        curve_model.validate_restored_host_weights()

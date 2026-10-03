@@ -58,6 +58,7 @@ GPU occupancy must be checked again before each run.
 - [ ] Resolve the base repository separately from the checkpoint and load only the required base components.
 - [ ] Construct and execute the compressed AdaLN layout without expanding it into a full dense projection.
 - [x] Implement FP32 curve interpolation and compressed projection primitives, with endpoint and dense-path regression tests.
+- [x] Select curve time embeddings in the native DiT, load the stored table, and check FP32 invariants after host-weight restore.
 - [ ] Map and validate checkpoint weights, rejecting unsupported layouts and unexpected missing parameters.
 - [ ] Reject unsupported A2 quantized files with actionable errors.
 - [ ] Ensure the selected checkpoint supplies the DiT weights for every task; prevent silent base-DiT fallback.

@@ -56,6 +56,7 @@ from vllm_omni.diffusion.models.host_weight_contract import FinalLayoutModelCont
 from vllm_omni.platforms import current_omni_platform
 
 from .adaln_cache import MiniMaxH3RuntimeAdalnCache
+from .adaln_curve import MiniMaxH3AdalnCurve
 from .fasth3 import _resolve_native_target
 
 if TYPE_CHECKING:
@@ -1240,9 +1241,10 @@ class MiniMaxH3DiTModel(nn.Module):
             quant_config=quant_config,
             prefix="condition_proj",
         )
-        self.time_embedder = MiniMaxH3TimeEmbedder(
-            arch,
-            prefix="time_embedder",
+        self.time_embedder = (
+            MiniMaxH3TimeEmbedder(arch, prefix="time_embedder")
+            if arch.adaln_curve_grid is None
+            else MiniMaxH3AdalnCurve(arch.adaln_curve_grid, arch.time_embed_dim)
         )
         self.rope = MiniMaxH3Rope(arch.rope_inv_freq_len)
         self.token_refiner = MiniMaxH3TokenRefiner(
@@ -1349,8 +1351,10 @@ class MiniMaxH3DiTModel(nn.Module):
         return super()._apply(fn, recurse=recurse)
 
     def post_load_weights(self) -> None:
+        curve_weights = isinstance(getattr(self, "time_embedder", None), MiniMaxH3AdalnCurve)
         for name, param in self.named_parameters():
-            if name in MINIMAX_H3_FP32_PARAM_NAMES and param.dtype != _FP32_DTYPE:
+            curve_fp32 = curve_weights and (name == "time_embedder.table" or ".adaln_proj.linear." in name)
+            if (name in MINIMAX_H3_FP32_PARAM_NAMES or curve_fp32) and param.dtype != _FP32_DTYPE:
                 raise ValueError(f"{name} must stay fp32 after load, got {param.dtype}.")
         for name, buffer in self.named_buffers():
             if name in MINIMAX_H3_FP32_BUFFER_NAMES and buffer.dtype != _FP32_DTYPE:
@@ -1371,10 +1375,19 @@ class MiniMaxH3DiTModel(nn.Module):
         params.update(dict(self.named_buffers()))
         loaded: set[str] = set()
         diffusers_weights = getattr(self, "_diffusers_weights", False)
+        curve_weights = isinstance(getattr(self, "time_embedder", None), MiniMaxH3AdalnCurve)
         qkv_parts: dict[str, set[str]] = {}
         source_names: set[str] = set()
         for name, loaded_weight in weights:
             layout = "plain"
+            if curve_weights:
+                # These optional tensors describe the dense-to-curve adapter
+                # basis. Native inference consumes only the stored table and
+                # already-compressed projections, as in ComfyUI.
+                if name in {"adaln_basis", "adaln_mean"}:
+                    continue
+                if name == "adaln_t_table":
+                    name = "time_embedder.table"
             if diffusers_weights:
                 if name in source_names:
                     raise ValueError(f"duplicate Diffusers H3 weight: {name}")
@@ -1386,6 +1399,8 @@ class MiniMaxH3DiTModel(nn.Module):
                 name, layout = f"{target[0]}.{kind}", target[1]
             param = params.get(name)
             if param is None:
+                if curve_weights:
+                    raise ValueError(f"unsupported H3 curve weight: {name}")
                 if diffusers_weights:
                     raise ValueError(f"Diffusers H3 weight has no model parameter: {name}")
                 logger.warning("Skipping MiniMax H3 weight not present in model: %s", name)
