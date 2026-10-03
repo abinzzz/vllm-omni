@@ -1014,6 +1014,7 @@ class MiniMaxH3Pipeline(
             od_config,
             quant_config=transformer_quant_config,
             diffusers_weights=modular,
+            grouped_qkv_weights=not single_file,
         )
         if self._fasth3_checkpoint is not None:
             self.transformer.enable_vsa_gates(sparsity=self._fasth3_checkpoint.vsa_sparsity)
@@ -1025,6 +1026,7 @@ class MiniMaxH3Pipeline(
                 od_config,
                 quant_config=transformer_quant_config,
                 diffusers_weights=modular,
+                grouped_qkv_weights=not single_file,
             )
 
         self._fasth3 = resolve_fasth3_fusion(od_config, self.transformer)

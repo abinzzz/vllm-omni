@@ -1168,6 +1168,7 @@ class MiniMaxH3DiTModel(nn.Module):
         quant_config: QuantizationConfig | None = None,
         *,
         diffusers_weights: bool | None = None,
+        grouped_qkv_weights: bool = True,
     ) -> None:
         super().__init__()
         tf_config = od_config.tf_model_config
@@ -1182,6 +1183,7 @@ class MiniMaxH3DiTModel(nn.Module):
             if diffusers_weights is None
             else diffusers_weights
         )
+        self._grouped_qkv_weights = grouped_qkv_weights
         self._rope_theta = float(config_mapping.get("rope_theta", 10000.0))
         arch = MiniMaxH3DiTArchConfig.from_mapping(config_mapping)
         self.arch = arch
@@ -1414,7 +1416,7 @@ class MiniMaxH3DiTModel(nn.Module):
                 # parameter, including TP slicing and online quantization.
                 weight_loader(param, loaded_weight, layout)
                 qkv_parts.setdefault(name, set()).add(layout)
-            elif name.endswith(".attn.qkv_proj.weight"):
+            elif name.endswith(".attn.qkv_proj.weight") and getattr(self, "_grouped_qkv_weights", True):
                 # Transform checkpoint layout before entering vLLM's loader so
                 # online FP8 can keep ``online_process_loader`` outermost.
                 loaded_weight = _reorder_grouped_qkv_to_qkv(

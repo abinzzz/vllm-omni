@@ -212,6 +212,37 @@ def test_model_load_weights_transforms_before_calling_vllm_loader():
     ]
 
 
+def test_comfy_single_file_qkv_weights_keep_their_qkv_order():
+    from vllm_omni.diffusion.models.minimax_h3.minimax_h3_transformer import (
+        MiniMaxH3DiTArchConfig,
+        MiniMaxH3DiTModel,
+    )
+
+    qkv_calls = []
+
+    def qkv_loader(param, loaded_weight):
+        del param
+        qkv_calls.append(loaded_weight.clone())
+
+    model = object.__new__(MiniMaxH3DiTModel)
+    nn.Module.__init__(model)
+    model.arch = MiniMaxH3DiTArchConfig(
+        hidden_size=1,
+        num_attention_heads=2,
+        attention_head_dim=1,
+        ffn_hidden_size=2,
+    )
+    model._grouped_qkv_weights = False
+    model.blocks = nn.ModuleList([nn.Module()])
+    model.blocks[0].attn = nn.Module()
+    model.blocks[0].attn.qkv_proj = _WeightTarget(qkv_loader)
+
+    qkv = torch.arange(6, dtype=torch.float32).reshape(6, 1)
+    model.load_weights([("blocks.0.attn.qkv_proj.weight", qkv)])
+
+    assert torch.equal(qkv_calls[0], qkv)
+
+
 def test_loader_adapter_declares_equivalent_direct_mmap_transform(monkeypatch):
     from vllm_omni.diffusion.model_loader.checkpoint_adapters import (
         get_direct_mmap_adapter,
