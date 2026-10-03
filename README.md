@@ -143,7 +143,8 @@ seed-42 diagnostic tracks the red-object centroid at frames 0/26/53/80/106:
 non-Turbo moves from x=240.1 to 999.9 pixels, and Turbo from x=240.2 to 1000.1,
 with monotonic intermediate positions. This confirms motion in this toy sample
 only; paired quality acceptance remains pending. Evidence:
-`~/chenyb/validation/h3-a1/fl2va-motion-audit-seed42.json`.
+`~/chenyb/validation/h3-a1/fl2va-motion-audit-seed42.json`. Reproduce with
+`/home/huxiaobin/chenyb/.venvs/vllm-029-validation/bin/python ~/chenyb/validation/h3-a1/audit-fl2va-motion.py`.
 
 #### Serving a beta5 file
 
