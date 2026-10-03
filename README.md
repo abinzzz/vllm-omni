@@ -91,7 +91,7 @@ and output evidence.
 
 | Variant | T2VA | FL2VA | Ref2VA |
 | --- | --- | --- | --- |
-| beta5 BF16 non-Turbo | A1 worktree 2-step MP4/audio smoke passed; acceptance pending | Pending | Pending |
+| beta5 BF16 non-Turbo | 50-step HSDP4 functional case passed; quality A/B pending | Pending | Pending |
 | beta5 BF16 Turbo | Pending | Pending | Pending |
 
 With `PYTHONPATH` pointed at this worktree, non-Turbo T2VA produced a fully
@@ -100,31 +100,43 @@ evaluations on two L40S GPUs using TP2 and rank-local DLO. Request time includin
 mux/write was 9.00 s, excluding 100.11 s startup. This verifies loading and
 media output only, not acceptance quality.
 
-A 50-step HSDP4 run on the same checkpoint and the RFC's 1344×768 shape also
-completed with all runtime modules imported from this worktree. Startup took
-173.74 s and generation took 270.60 s. The MP4 decodes fully and contains 107
-frames plus 32 kHz stereo audio, but visual inspection shows a nearly uniform
-gray-brown texture rather than the prompted scene. This is a functional/quality
-failure that must be diagnosed before A1 can pass; the run is a single
-diagnostic sample, not a benchmark. Its manifest, log and video are under
+A pre-fix 50-step HSDP4 run at the RFC's 1344×768 shape completed with valid
+media but produced only gray-brown texture. It used the A1 worktree, but its
+native loader incorrectly applied grouped-QKV row reordering to ComfyUI-layout
+single-file weights. Treat this run as a preserved pre-fix diagnostic, not as
+current behavior. Its manifest, log and video are under
 `~/chenyb/validation/h3-a1/generation/non-turbo-t2va-hsdp4-50step-branch/`.
 
 The clip-length check requested 5 seconds with the same seed, prompt, checkpoint,
 steps and resolution. H3 aligned this request to 124 frames; that MP4 also decodes
 fully with stereo audio, but its middle frame has the same texture-only failure.
-This rejects clip length below the community node's documented training range
-as the sole cause. Startup took 173.11 s and generation plus mux/write took
-323.54 s on HSDP4. Evidence is under
+This result predates the QKV correction below and does not isolate clip length.
+Startup took 173.11 s and generation plus mux/write took 323.54 s on HSDP4. Evidence is under
 `~/chenyb/validation/h3-a1/generation/non-turbo-t2va-hsdp4-50step-duration5/`.
 
 A one-step tensor trace found the first large activation in the base Qwen3-VL
 text encoder's layer-6 MLP: the first prompt token reaches about 14k in hidden
 dimension 731. The same prompt and base checkpoint through the official
 Transformers Qwen3-VL implementation produce the same layer-6 and layer-50
-outlier (within BF16 rounding). This is expected reference behavior, not the
-cause of the texture-only video. The next diagnosis is in the H3 DiT and
-sampling path. Temporary tensor-stat instrumentation has been removed from the
-worktree; diagnostic logs and the reference probe are kept under
+outlier (within BF16 rounding), so this is expected reference behavior.
+
+The texture failure was caused by QKV layout handling. ComfyUI's H3 attention
+uses contiguous `[all Q, all K, all V]` projection rows, while the native
+checkpoint path previously reordered them as grouped `[q0,k0,v0,q1,k1,v1,…]`.
+The single-file path now preserves stored row order; native grouped checkpoints
+retain their existing reorder. A regression test caught the incorrect order
+before the fix. Commit `e310edd9` fixes it. On that commit, the same beta5
+non-Turbo checkpoint generated the prompted moving ball/table scene in both a
+448×256, 50-step, 5-second diagnostic and a 1344×768, 50-step, 4-second
+HSDP4 functional run. The formal-shape run took 163.77 s to start and 269.83 s
+for generation, mux and write; its MP4 fully decodes to 107 frames with 32 kHz
+stereo audio. Evidence is under
+`~/chenyb/validation/h3-a1/generation/non-turbo-t2va-qkv-direct-hsdp4-50step-1344x768-retry1/`;
+the contact sheet is
+`~/chenyb/validation/h3-a1/frames/non-turbo-qkv-direct-1344x768-contact.png`.
+These are functional checks for one non-Turbo T2VA input, not the required
+fixed-seed quality A/B or full A1 acceptance. Temporary instrumentation has
+been removed; the pre-fix and fixed-run manifests and logs are retained under
 `~/chenyb/validation/h3-a1/`.
 
 An earlier acceptance-shape run produced three 1344×768, 50-step MP4s, but the
