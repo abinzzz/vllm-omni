@@ -1,3 +1,121 @@
+<!-- BEGIN H3 A1 BRANCH TODO -->
+
+# MiniMax-H3 A1: BF16 single-file checkpoint support
+
+This branch tracks implementation and validation of TenStrip/10Eros-Max beta5
+BF16 Turbo and non-Turbo checkpoints in vLLM-Omni. Support is **not implemented
+or validated yet**. Keep this checklist current as work progresses; mark an item
+complete only when its implementation or validation evidence is recorded.
+
+Branch: `feat/h3-single-file-bf16`
+
+Initial upstream base: `ee8fdab1dc26ea8f09d7910cdc98a17c4b0ea02a`
+
+The upstream project README is preserved below. Once A1 acceptance is complete,
+replace this temporary section with verified user-facing documentation and a
+link to the serving recipe, retaining the general project README. INT8 and W4A8
+support belongs to A2 and is outside this checklist.
+
+## Acceptance criteria
+
+- Load either beta5 BF16 checkpoint by pointing at one file, obtaining remaining
+  components from the base H3 repository.
+- Execute the checkpoint as stored, including its compressed AdaLN computation.
+- Generate valid MP4s with audio for T2VA, FL2VA and Ref2VA with both variants.
+- Compare against official H3 at fixed seeds using LPIPS, audio similarity,
+  VBench and seconds per request. The Turbo reference uses LightX2V Turbo.
+- Validate supported official-H3 parallelism and offload profiles, and report
+  any coverage gaps explicitly.
+
+## TODO
+
+### 0. Workspace and baseline
+
+- [x] Create an isolated worktree and A1 branch from the fetched upstream main.
+- [x] Verify GPU discovery outside the sandbox: 8 L40S GPUs; PyTorch reports CUDA available.
+- [x] Run the existing modulation CPU baseline: 6 passed, 4 deselected.
+- [ ] Establish a compatible complete inference environment, including compiled vLLM extensions.
+- [ ] Inventory checkpoint storage requirements and available GPUs before downloads or inference.
+
+The CPU baseline only checks existing behavior; it is not evidence of A1 support.
+Machine-specific logs and environment notes live outside the repository in
+`~/chenyb/validation/h3-a1/`, including `HANDOFF.md` and `baseline-modulation.log`.
+GPU occupancy must be checked again before each run.
+
+### 1. Checkpoint and reference investigation
+
+- [ ] Pin beta5 BF16 Turbo/non-Turbo filenames, revisions and checksums, and base H3 component revisions.
+- [ ] Inspect checkpoint metadata, tensor names, dtypes and shapes before large downloads where possible.
+- [ ] Identify which components are stored in the file and which must come from base H3.
+- [ ] Read the reference implementation and document compressed AdaLN computation and parameter mapping.
+- [ ] Verify how each checkpoint supports T2VA, FL2VA and Ref2VA, including partition-specific differences.
+- [ ] Confirm Turbo step counts, sigma schedules, guidance settings and already-merged adapters.
+- [ ] Finalize the loading interface and compatibility design from this evidence.
+
+### 2. Loader and model implementation
+
+- [ ] Reuse the native single-file entrypoint and existing component loading mechanisms where applicable.
+- [ ] Resolve the base repository separately from the checkpoint and load only the required base components.
+- [ ] Construct and execute the compressed AdaLN layout without expanding it into a full dense projection.
+- [ ] Map and validate checkpoint weights, rejecting unsupported layouts and unexpected missing parameters.
+- [ ] Reject unsupported A2 quantized files with actionable errors.
+- [ ] Ensure the selected checkpoint supplies the DiT weights for every task; prevent silent base-DiT fallback.
+- [ ] Preserve the official H3 loading path and integrate with AdaLN caching, offload and parallel loading.
+- [ ] Apply validated Turbo sampling settings without applying merged adapters a second time.
+
+### 3. Focused regression tests
+
+- [ ] Test weight mapping and base-component selection with small synthetic checkpoints.
+- [ ] Test malformed, incomplete and unsupported checkpoints and clear error reporting.
+- [ ] Compare compressed AdaLN outputs with the reference computation on small tensors, documenting tolerances.
+- [ ] Cover task/partition selection and Turbo schedule handling.
+- [ ] Run applicable official H3, single-file loader and configuration regression tests.
+- [ ] Run repository formatting and lint checks for changed files.
+
+### 4. End-to-end generation
+
+Start with small-shape smoke tests, then repeat at the recorded acceptance shapes.
+Complete each row only after preserving the command, configuration, seed, logs
+and output evidence.
+
+| Variant | T2VA | FL2VA | Ref2VA |
+| --- | --- | --- | --- |
+| beta5 BF16 non-Turbo | Pending | Pending | Pending |
+| beta5 BF16 Turbo | Pending | Pending | Pending |
+
+- [ ] Complete all six generation cases above.
+- [ ] Verify MP4 decoding, dimensions, frame count, duration and audio track for every case.
+- [ ] Verify that first/last-frame and reference conditioning enter the intended inference path.
+- [ ] Verify actual checkpoint weight consumption for each task.
+- [ ] Validate the parallelism and offload profile matrix and record unsupported or untested combinations.
+
+### 5. Fixed-seed quality and latency evaluation
+
+- [ ] Define a reproducible prompt/input suite, seeds, shapes, sampling settings and metric implementations.
+- [ ] Run non-Turbo against official H3 and Turbo against official H3 plus LightX2V Turbo.
+- [ ] Report LPIPS, audio similarity and VBench, with metric versions and preprocessing documented.
+- [ ] Report end-to-end seconds per request with hardware, warmup policy, repetitions and timing boundaries.
+- [ ] Preserve side-by-side videos and per-example results, including failures and quality regressions.
+- [ ] Record model/code revisions, environment, commands and artifact locations for reproduction.
+
+LPIPS measures output differences and does not by itself establish better quality.
+No numerical quality threshold is specified in the acceptance criteria; report
+measured results and limitations without inventing a pass threshold.
+
+### 6. Final documentation and PR readiness
+
+- [ ] Write verified installation and serving instructions for both checkpoint variants and all three tasks.
+- [ ] Document base-component sources, supported layouts, Turbo settings and validated deployment profiles.
+- [ ] Publish a reviewable validation report with reproduction commands and evidence locations.
+- [ ] Review checkpoint/base-component license requirements and document applicable usage conditions.
+- [ ] Review the scoped diff and prepare the A1 PR with environment, test results and remaining limitations.
+- [ ] After all A1 acceptance work is complete, replace this temporary TODO with final usage documentation
+  and a serving-recipe link; remove machine-specific development notes from the README.
+
+<!-- END H3 A1 BRANCH TODO -->
+
+---
+
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/vllm-project/vllm-omni/refs/heads/main/docs/source/logos/vllm-omni-logo.png">
