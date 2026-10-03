@@ -284,10 +284,38 @@ measured results and limitations without inventing a pass threshold.
 - [ ] Write verified installation and serving instructions for both checkpoint variants and all three tasks.
 - [ ] Document base-component sources, supported layouts, Turbo settings and validated deployment profiles.
 - [ ] Publish a reviewable validation report with reproduction commands and evidence locations.
-- [ ] Review checkpoint/base-component license requirements and document applicable usage conditions.
+- [x] Review checkpoint/base-component license requirements and document the source declarations and material conditions below.
 - [ ] Review the scoped diff and prepare a handoff with environment, test results and remaining limitations.
 - [ ] After all A1 acceptance work is complete, replace this temporary TODO with final usage documentation
   and a serving-recipe link; remove machine-specific development notes from the README.
+
+#### Third-party checkpoint licenses
+
+The beta5 files are third-party artifacts and are not included with vLLM-Omni.
+The [TenStrip model card](https://huggingface.co/TenStrip/10Eros-Max) says the
+MiniMax H3 Community License applies and that transferred Krea 2, LTX 2.3 and
+Wan 2.2 material remains subject to its source-model community license. That is
+the checkpoint author's declaration; it does not determine the legal treatment
+of every merged tensor.
+
+Review the [MiniMax H3 license](https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/LICENSE)
+before use: its defined territory excludes the United States, European Union,
+United Kingdom and Republic of Korea; it restricts use of H3 outputs to improve
+other AI models; commercial products/services above USD 20M annual revenue need
+prior written authorization; and commercial services using H3 must prominently
+display the MiniMax H3 name. Hosted services and distributions also have
+downstream-user and notice obligations.
+
+The [Krea 2 Community License](https://github.com/krea-ai/krea-2/blob/main/docs/KREA-2-COMMUNITY-LICENSE)
+sets a USD 1M company-wide trailing-twelve-month revenue threshold for
+commercial use under its community terms and specifies content-filtering and
+derivative distribution requirements. The [LTX 2.x license](https://github.com/Lightricks/LTX-2/blob/main/LICENSE-2_x)
+requires entities with annual revenue of at least USD 10M to obtain a paid
+commercial-use agreement for commercial use of LTX-2.x and derivatives, and
+sets additional use and distribution conditions. The [Wan 2.2 model card](https://huggingface.co/Wan-AI/Wan2.2-T2V-A14B)
+declares Apache-2.0. Review each complete license for the intended use; these
+notes are not legal advice. The vLLM-Omni Apache-2.0 software license does not
+change the checkpoint or base-weight license terms.
 
 <!-- END H3 A1 BRANCH TODO -->
 
