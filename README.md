@@ -91,7 +91,7 @@ and output evidence.
 
 | Variant | T2VA | FL2VA | Ref2VA |
 | --- | --- | --- | --- |
-| beta5 BF16 non-Turbo | 50-step HSDP4 MP4/audio generated; visual content failed inspection; acceptance pending | Pending | Pending |
+| beta5 BF16 non-Turbo | Earlier 50-step HSDP4 output is invalid as A1 evidence: runtime imported the Mammoth checkout; acceptance pending | Pending | Pending |
 | beta5 BF16 Turbo | Pending | Pending | Pending |
 
 The non-Turbo T2VA smoke produced a decoded 448×256 MP4 with 107 frames
@@ -101,15 +101,13 @@ and rank-local DLO. Request time including mux/write was 11.69 s, excluding
 Engine shutdown logged cleanup timeouts, but host checks confirmed workers
 exited and GPU memory was released; lifecycle validation remains pending.
 
-The acceptance-shape non-Turbo T2VA run completed on four L40S GPUs with HSDP4
-at 1344×768, 50 Euler steps and the fixed seed-42 input. All three measured
-requests produced fully decoded 107-frame MP4s with stereo 32 kHz audio in
-267.8–268.1 s each. Visual inspection found gray/brown texture without the
-prompted scene, so these results verify the HSDP load and media path only; the
-model output and quality comparison remain unresolved. The ordinary TP4
-8-step diagnostic failed during initialization when a local checkpoint path
-was parsed as a Hugging Face repo id. See the external handoff and logs under
-`~/chenyb/validation/h3-a1/` for current diagnostic evidence.
+An earlier acceptance-shape run produced three 1344×768, 50-step MP4s on
+HSDP4 in 267.8–268.1 s each, but the runner imported vLLM-Omni from the
+separate Mammoth editable checkout instead of this branch. Its output and a
+later TP4 initialization failure are preserved for diagnosis but are invalid
+as A1 implementation evidence. All generation must set `PYTHONPATH` to this
+worktree and record the imported module paths before it counts toward acceptance.
+See the external handoff and logs under `~/chenyb/validation/h3-a1/` for details.
 
 - [ ] Complete all six generation cases above.
 - [ ] Verify MP4 decoding, dimensions, frame count, duration and audio track for every case.
