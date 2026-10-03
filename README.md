@@ -91,7 +91,7 @@ and output evidence.
 
 | Variant | T2VA | FL2VA | Ref2VA |
 | --- | --- | --- | --- |
-| beta5 BF16 non-Turbo | 50-step HSDP4 functional case passed; quality A/B pending | 50-step MP4/audio generated; motion check unresolved | HSDP4 2-step smoke passed; formal validation pending |
+| beta5 BF16 non-Turbo | 50-step HSDP4 functional case passed; quality A/B pending | 50-step MP4/audio generated; motion check unresolved | 50-step HSDP4 case passed; quality A/B pending |
 | beta5 BF16 Turbo | Pending | Pending | Pending |
 
 With `PYTHONPATH` pointed at this worktree, non-Turbo T2VA produced a fully
@@ -160,6 +160,16 @@ Evidence is under
 `~/chenyb/validation/h3-a1/generation/non-turbo-fl2va-qkv-direct-hsdp4-50step-1344x768/`;
 the sampled frames are in
 `~/chenyb/validation/h3-a1/frames/non-turbo-fl2va-qkv-direct-1344x768-contact.png`.
+
+A formal-shape non-Turbo Ref2VA case also completed at 50 steps, seed 42 and
+1344×768 HSDP4 using the suite's first image. Startup took 164.29 s and
+generation, mux and write took 290.99 s. The MP4 fully decodes to 107 frames
+with 32 kHz stereo audio. Sampled frames retain the reference scene; this is a
+single-case media and conditioning check, not the required fixed-seed official
+H3 A/B. Evidence is under
+`~/chenyb/validation/h3-a1/generation/non-turbo-ref2va-qkv-direct-hsdp4-50step-1344x768/`;
+the contact sheet is
+`~/chenyb/validation/h3-a1/frames/non-turbo-ref2va-qkv-direct-1344x768-contact.png`.
 
 An earlier acceptance-shape run produced three 1344×768, 50-step MP4s, but the
 runner imported vLLM-Omni from the separate Mammoth editable checkout instead
