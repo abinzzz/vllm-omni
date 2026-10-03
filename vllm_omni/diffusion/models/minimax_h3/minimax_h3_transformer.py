@@ -112,6 +112,7 @@ class MiniMaxH3DiTArchConfig:
     timestep_input_dim: int = 256
     time_embed_hidden_size: int = 5376
     time_embed_dim: int = 2688
+    adaln_curve_grid: int | None = None
     adaln_out_features: int = 18 * 5376
     final_adaln_out_features: int = 2 * 5376
     rope_inv_freq_len: int = 16
@@ -772,13 +773,14 @@ class MiniMaxH3AdalnProj(nn.Module):
         self.expand_ratio = expand_ratio
         self.modality_num = modality_num
         self.hidden_size = arch.hidden_size
+        self._use_adaln_curve = arch.adaln_curve_grid is not None
         self.linear = ColumnParallelLinear(
             arch.time_embed_dim,
             out_features,
             bias=True,
             gather_output=True,
-            params_dtype=_BF16_DTYPE,
-            quant_config=quant_config,
+            params_dtype=_FP32_DTYPE if self._use_adaln_curve else _BF16_DTYPE,
+            quant_config=None if self._use_adaln_curve else quant_config,
             prefix=f"{prefix}.linear",
         )
 
@@ -786,6 +788,8 @@ class MiniMaxH3AdalnProj(nn.Module):
         """t_emb: [M, t_dim] -> expand_ratio tensors of [M*modality_num, H]."""
 
         def project() -> torch.Tensor:
+            if self._use_adaln_curve:
+                return self.linear(t_emb.to(_FP32_DTYPE))[0]
             x = nn.functional.silu(t_emb)
             return self.linear(x.to(_BF16_DTYPE))[0]
 

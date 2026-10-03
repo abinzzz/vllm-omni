@@ -3,8 +3,8 @@
 # MiniMax-H3 A1: BF16 single-file checkpoint support
 
 This branch tracks implementation and validation of TenStrip/10Eros-Max beta5
-BF16 Turbo and non-Turbo checkpoints in vLLM-Omni. Support is **not implemented
-or validated yet**. Keep this checklist current as work progresses; mark an item
+BF16 Turbo and non-Turbo checkpoints in vLLM-Omni. Support is **in development;
+end-to-end serving is not validated yet**. Keep this checklist current as work progresses; mark an item
 complete only when its implementation or validation evidence is recorded.
 
 Branch: `feat/h3-single-file-bf16`
@@ -45,8 +45,8 @@ GPU occupancy must be checked again before each run.
 ### 1. Checkpoint and reference investigation
 
 - [ ] Pin beta5 BF16 Turbo/non-Turbo filenames, revisions and checksums, and base H3 component revisions.
-- [ ] Inspect checkpoint metadata, tensor names, dtypes and shapes before large downloads where possible.
-- [ ] Identify which components are stored in the file and which must come from base H3.
+- [x] Inspect checkpoint metadata, tensor names, dtypes and shapes before large downloads where possible.
+- [x] Identify which components are stored in the file and which must come from base H3.
 - [ ] Read the reference implementation and document compressed AdaLN computation and parameter mapping.
 - [ ] Verify how each checkpoint supports T2VA, FL2VA and Ref2VA, including partition-specific differences.
 - [ ] Confirm Turbo step counts, sigma schedules, guidance settings and already-merged adapters.
@@ -57,6 +57,7 @@ GPU occupancy must be checked again before each run.
 - [ ] Reuse the native single-file entrypoint and existing component loading mechanisms where applicable.
 - [ ] Resolve the base repository separately from the checkpoint and load only the required base components.
 - [ ] Construct and execute the compressed AdaLN layout without expanding it into a full dense projection.
+- [x] Implement FP32 curve interpolation and compressed projection primitives, with endpoint and dense-path regression tests.
 - [ ] Map and validate checkpoint weights, rejecting unsupported layouts and unexpected missing parameters.
 - [ ] Reject unsupported A2 quantized files with actionable errors.
 - [ ] Ensure the selected checkpoint supplies the DiT weights for every task; prevent silent base-DiT fallback.
