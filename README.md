@@ -117,6 +117,16 @@ as the sole cause. Startup took 173.11 s and generation plus mux/write took
 323.54 s on HSDP4. Evidence is under
 `~/chenyb/validation/h3-a1/generation/non-turbo-t2va-hsdp4-50step-duration5/`.
 
+A one-step tensor trace found the first large activation in the base Qwen3-VL
+text encoder's layer-6 MLP: the first prompt token reaches about 14k in hidden
+dimension 731. The same prompt and base checkpoint through the official
+Transformers Qwen3-VL implementation produce the same layer-6 and layer-50
+outlier (within BF16 rounding). This is expected reference behavior, not the
+cause of the texture-only video. The next diagnosis is in the H3 DiT and
+sampling path. Temporary tensor-stat instrumentation has been removed from the
+worktree; diagnostic logs and the reference probe are kept under
+`~/chenyb/validation/h3-a1/`.
+
 An earlier acceptance-shape run produced three 1344×768, 50-step MP4s, but the
 runner imported vLLM-Omni from the separate Mammoth editable checkout instead
 of this branch. Those outputs and later TP4/HSDP4 initialization failures are
@@ -160,7 +170,6 @@ measured results and limitations without inventing a pass threshold.
 - [ ] Publish a reviewable validation report with reproduction commands and evidence locations.
 - [ ] Review checkpoint/base-component license requirements and document applicable usage conditions.
 - [ ] Review the scoped diff and prepare a handoff with environment, test results and remaining limitations.
-  The contributor will open the PR and post comments.
 - [ ] After all A1 acceptance work is complete, replace this temporary TODO with final usage documentation
   and a serving-recipe link; remove machine-specific development notes from the README.
 
