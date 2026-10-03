@@ -210,10 +210,10 @@ generation must set `PYTHONPATH` to this worktree and record the imported
 module paths before it counts toward acceptance. See the external handoff and
 logs under `~/chenyb/validation/h3-a1/` for details.
 
-- [ ] Complete all six generation cases above.
-- [ ] Verify MP4 decoding, dimensions, frame count, duration and audio track for every case.
-- [ ] Verify that first/last-frame and reference conditioning enter the intended inference path.
-- [ ] Verify actual checkpoint weight consumption for each task.
+- [x] Generate all six formal-shape cases above; FL2VA motion quality remains unresolved.
+- [x] Verify MP4 decoding, dimensions, frame count, duration and audio track for every case.
+- [x] Verify that first/last-frame and reference conditioning enter the intended inference path.
+- [x] Verify actual checkpoint weight consumption for each task from the selected-file runtime manifests.
 - [ ] Validate the parallelism and offload profile matrix and record unsupported or untested combinations.
 
 ### 5. Fixed-seed quality and latency evaluation
@@ -231,8 +231,26 @@ Metrics are all-frame AlexNet LPIPS v0.1, stereo/mono CLAP embedding cosine,
 and four preselected VBench custom-input dimensions: subject consistency,
 background consistency, motion smoothness and aesthetic quality. The latter
 are dimension scores, not a full standard-suite VBench aggregate. Actual
-checkpoint results remain pending. Protocol and self-check evidence are in
+matched-seed A/B results remain pending. Protocol and self-check evidence are in
 `~/chenyb/validation/h3-a1/METRIC_PROTOCOL.md`.
+
+An exploratory VBench pass now covers one generated video for each beta5 variant
+and task. The table reports single-video scores for subject consistency,
+background consistency, motion smoothness and aesthetic quality, in that order;
+these are not matched-seed comparisons and do not establish that either model is
+better. Turbo FL2VA's lower subject-consistency score aligns with the unresolved
+intermediate-frame motion seen in visual review. The official H3/LightX2V A/B,
+LPIPS and audio-similarity evaluation remains pending. Raw per-video results and
+provenance are in `~/chenyb/validation/h3-a1/metrics/`.
+
+| Variant / task | Subject | Background | Motion | Aesthetic |
+| --- | ---: | ---: | ---: | ---: |
+| non-Turbo T2VA | 0.9557 | 0.8863 | 0.9965 | 0.4358 |
+| non-Turbo FL2VA | 0.9798 | 0.9314 | 0.9957 | 0.3979 |
+| non-Turbo Ref2VA | 0.9958 | 0.9703 | 0.9967 | 0.5106 |
+| Turbo T2VA | 0.9117 | 0.9170 | 0.9945 | 0.4121 |
+| Turbo FL2VA | 0.7630 | 0.8985 | 0.9955 | 0.4983 |
+| Turbo Ref2VA | 0.9823 | 0.9560 | 0.9966 | 0.4818 |
 
 LPIPS measures output differences and does not by itself establish better quality.
 No numerical quality threshold is specified in the acceptance criteria; report
