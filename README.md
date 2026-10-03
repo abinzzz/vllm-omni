@@ -91,15 +91,15 @@ and output evidence.
 
 | Variant | T2VA | FL2VA | Ref2VA |
 | --- | --- | --- | --- |
-| beta5 BF16 non-Turbo | Earlier 50-step HSDP4 output is invalid as A1 evidence: runtime imported the Mammoth checkout; acceptance pending | Pending | Pending |
+| beta5 BF16 non-Turbo | A1 worktree 2-step MP4/audio smoke passed; acceptance pending | Pending | Pending |
 | beta5 BF16 Turbo | Pending | Pending | Pending |
 
-The non-Turbo T2VA smoke produced a decoded 448×256 MP4 with 107 frames
-and 32 kHz stereo audio at two Euler evaluations on two L40S GPUs with TP2
-and rank-local DLO. Request time including mux/write was 11.69 s, excluding
-129.88 s startup. This is a smoke result, not an acceptance-shape quality claim.
-Engine shutdown logged cleanup timeouts, but host checks confirmed workers
-exited and GPU memory was released; lifecycle validation remains pending.
+With `PYTHONPATH` pointed at this worktree, non-Turbo T2VA produced a fully
+decoded 448×256 MP4 with 107 frames and 32 kHz stereo audio at two Euler
+evaluations on two L40S GPUs using TP2 and rank-local DLO. Request time including
+mux/write was 9.00 s, excluding 100.11 s startup. The two-step frame is noisy;
+this verifies loading and media output only, not acceptance quality. Worker and
+runner processes exited and GPU memory was released after shutdown.
 
 An earlier acceptance-shape run produced three 1344×768, 50-step MP4s on
 HSDP4 in 267.8–268.1 s each, but the runner imported vLLM-Omni from the
