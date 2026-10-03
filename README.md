@@ -81,7 +81,7 @@ HSDP loading is tested above; production checkpoint profiles still require valid
 - [x] Compare compressed AdaLN outputs with the reference computation on small tensors, documenting tolerances.
 - [x] Cover task/partition selection and record the tested Turbo schedule.
 - [x] Run focused H3, single-file loader, configuration and two-GPU HSDP regressions.
-- [ ] Run repository formatting and lint checks for changed files.
+- [x] Run repository formatting and lint checks for changed files.
 
 ### 4. End-to-end generation
 
