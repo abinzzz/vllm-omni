@@ -233,9 +233,10 @@ logs under `~/chenyb/validation/h3-a1/` for details.
 - [x] Verify actual checkpoint weight consumption for each task from the selected-file runtime manifests.
 - [ ] Validate the parallelism and offload profile matrix and record unsupported or untested combinations.
 
-Current evidence covers all six BF16 task/variant cases with HSDP4 and a
-non-Turbo T2VA TP2+DLO smoke. Full-resolution DLO and the broader profile
-matrix remain open; evidence and untested combinations are tracked in
+Current evidence covers all six BF16 task/variant cases with HSDP4, a
+non-Turbo T2VA TP2+DLO smoke, and a synthetic compressed-AdaLN TP4 forward.
+Full-resolution DLO, beta5 TP4 and the broader profile matrix remain open;
+evidence and untested combinations are tracked in
 `~/chenyb/validation/h3-a1/PROFILE_MATRIX.md`.
 
 ### 5. Fixed-seed quality and latency evaluation
