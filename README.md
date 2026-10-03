@@ -97,17 +97,25 @@ and output evidence.
 With `PYTHONPATH` pointed at this worktree, non-Turbo T2VA produced a fully
 decoded 448×256 MP4 with 107 frames and 32 kHz stereo audio at two Euler
 evaluations on two L40S GPUs using TP2 and rank-local DLO. Request time including
-mux/write was 9.00 s, excluding 100.11 s startup. The two-step frame is noisy;
-this verifies loading and media output only, not acceptance quality. Worker and
-runner processes exited and GPU memory was released after shutdown.
+mux/write was 9.00 s, excluding 100.11 s startup. This verifies loading and
+media output only, not acceptance quality.
 
-An earlier acceptance-shape run produced three 1344×768, 50-step MP4s on
-HSDP4 in 267.8–268.1 s each, but the runner imported vLLM-Omni from the
-separate Mammoth editable checkout instead of this branch. Its output and a
-later TP4 initialization failure are preserved for diagnosis but are invalid
-as A1 implementation evidence. All generation must set `PYTHONPATH` to this
-worktree and record the imported module paths before it counts toward acceptance.
-See the external handoff and logs under `~/chenyb/validation/h3-a1/` for details.
+A 50-step HSDP4 run on the same checkpoint and the RFC's 1344×768 shape also
+completed with all runtime modules imported from this worktree. Startup took
+173.74 s and generation took 270.60 s. The MP4 decodes fully and contains 107
+frames plus 32 kHz stereo audio, but visual inspection shows a nearly uniform
+gray-brown texture rather than the prompted scene. This is a functional/quality
+failure that must be diagnosed before A1 can pass; the run is a single
+diagnostic sample, not a benchmark. Its manifest, log and video are under
+`~/chenyb/validation/h3-a1/generation/non-turbo-t2va-hsdp4-50step-branch/`.
+
+An earlier acceptance-shape run produced three 1344×768, 50-step MP4s, but the
+runner imported vLLM-Omni from the separate Mammoth editable checkout instead
+of this branch. Those outputs and later TP4/HSDP4 initialization failures are
+preserved for diagnosis but are invalid as A1 implementation evidence. All
+generation must set `PYTHONPATH` to this worktree and record the imported
+module paths before it counts toward acceptance. See the external handoff and
+logs under `~/chenyb/validation/h3-a1/` for details.
 
 - [ ] Complete all six generation cases above.
 - [ ] Verify MP4 decoding, dimensions, frame count, duration and audio track for every case.
