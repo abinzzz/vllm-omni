@@ -108,6 +108,10 @@ AdaLN modulation, H3 contracts and packed conditioning: 290 passed and 3 were
 skipped. The log is in `~/chenyb/validation/h3-a1/current-broad-cpu-regression.log`.
 An initial in-sandbox run could not allocate localhost sockets and left platform
 fixtures uninitialized; it is not counted as a code failure.
+A synthetic two-GPU HSDP test also passed on CUDA 0/1, covering selected-file
+loading, FP32 AdaLN restoration and explicit rejection of pre-sharded loading;
+it does not load a real beta5 checkpoint. See
+`~/chenyb/validation/h3-a1/current-single-file-hsdp-device.log`.
 
 ### 4. End-to-end generation
 
