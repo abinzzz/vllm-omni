@@ -1,6 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # SPDX-FileCopyrightText: Copyright contributors to the vLLM-Omni project
 
+import json
+from types import SimpleNamespace
+
 import pytest
 import torch
 from safetensors.torch import save_file
@@ -158,3 +161,95 @@ def test_single_file_resolves_serving_stage_without_hub_discovery(tmp_path, chec
         strategy_config_path=None,
     )
     assert len(resolved.stage_configs) == 1
+
+
+@pytest.mark.parametrize("task", ["t2va", "fl2va", "ref2va", None])
+@pytest.mark.parametrize("as_symlink", [False, True])
+def test_pipeline_loads_selected_file_for_each_task(tmp_path, checkpoint_tensors, monkeypatch, task, as_symlink):
+    from vllm.config.load import LoadConfig
+    from vllm.distributed import parallel_state
+
+    from tests.diffusion.models.minimax_h3.test_minimax_h3_quantization import _FakeAttention
+    from vllm_omni.diffusion.data import OmniDiffusionConfig
+    from vllm_omni.diffusion.model_loader.diffusers_loader import DiffusersPipelineLoader
+    from vllm_omni.diffusion.models.minimax_h3 import minimax_h3_transformer as h3
+    from vllm_omni.diffusion.models.minimax_h3 import pipeline_minimax_h3 as pipeline_module
+
+    monkeypatch.setattr(parallel_state, "get_tp_group", lambda: SimpleNamespace(world_size=1, rank_in_group=0))
+    monkeypatch.setattr(h3, "Attention", _FakeAttention)
+    monkeypatch.setattr(pipeline_module, "get_local_device", lambda: torch.device("cpu"))
+    component_paths = []
+
+    def vae(path, *args, **kwargs):
+        component_paths.append(path)
+        return torch.nn.Module()
+
+    for name in ("MiniMaxH3VideoVAE", "MiniMaxH3AudioVAE"):
+        monkeypatch.setattr(pipeline_module, name, vae)
+    base = tmp_path / "base"
+    for partition, tasks in (("FL2VA", ["t2va", "fl2va"]), ("Ref2VA", ["ref2va"])):
+        root = base / partition
+        root.mkdir(parents=True)
+        (root / "model_index.json").write_text(
+            json.dumps({"_minimax_h3": {"partition": partition.lower(), "tasks": tasks}})
+        )
+    checkpoint_tensors["adaln_t_table"] = torch.tensor([[0, 4], [2, 8], [10, -4]], dtype=torch.bfloat16)
+    path = tmp_path / "hybrid[beta5].safetensors"
+    save_file(checkpoint_tensors, path)
+    if as_symlink:
+        blob = tmp_path / "blobs" / "blob_without_extension"
+        blob.parent.mkdir()
+        path.rename(blob)
+        path.symlink_to(blob)
+    save_file({"unrelated": torch.ones(1)}, tmp_path / "unrelated.safetensors")
+    config = OmniDiffusionConfig(
+        model=str(path),
+        model_class_name="MiniMaxH3Pipeline",
+        task_type=task,
+        model_loaded={"text_encoder": False, "vae_encoder": True},
+        custom_pipeline_args={"base_model": str(base)},
+    )
+    config.enrich_config()
+    pipeline = pipeline_module.MiniMaxH3Pipeline(od_config=config)
+    loader = DiffusersPipelineLoader(LoadConfig(), config)
+    sources = pipeline.weights_sources
+    assert len(sources) == (2 if task is None else 1)
+    weights = (item for source in sources for item in loader._get_weights_iterator(source, model=pipeline))
+    loaded = pipeline.load_weights(weights)
+    expected = torch.tensor([[1.0, 6.0]])
+    for requested in {"t2va", "fl2va", "ref2va"} if task is None else {task}:
+        transformer = pipeline._transformer_for_task(requested)
+        torch.testing.assert_close(transformer.time_embedder(torch.tensor([0.25])), expected, rtol=0, atol=0)
+    assert "transformer.time_embedder.table" in loaded
+    assert all(source.model_or_path == str(path.parent) for source in sources)
+    assert set(component_paths) == {str(base / "FL2VA" / component) for component in ("video_vae", "audio_vae")}
+
+
+@pytest.mark.parametrize("partition", ["fl2va", "ref2va", "combined"])
+def test_single_file_base_download_excludes_dense_dits(monkeypatch, tmp_path, partition):
+    from fnmatch import fnmatch
+
+    from vllm_omni.diffusion.models.minimax_h3 import pipeline_minimax_h3 as pipeline_module
+
+    captured = {}
+
+    def download(**kwargs):
+        captured.update(kwargs)
+        return str(tmp_path)
+
+    monkeypatch.setattr(pipeline_module, "download_weights_from_hf_specific", download)
+    monkeypatch.setattr(pipeline_module, "is_minimax_h3_modular", lambda *args: False)
+    pipeline_module._resolve_minimax_h3_model_root(
+        "MiniMaxAI/MiniMax-H3",
+        "pinned-base-revision",
+        partition,
+        load_text_encoder=True,
+        load_transformer=False,
+    )
+    patterns = captured["allow_patterns"]
+    for folder in ("FL2VA", "Ref2VA"):
+        assert not any(fnmatch(f"{folder}/transformer/model.safetensors", p) for p in patterns)
+    shared = "FL2VA"
+    for component in ("text_encoder", "video_vae", "audio_vae", "tokenizer", "processor"):
+        assert any(fnmatch(f"{shared}/{component}/config.json", p) for p in patterns)
+    assert captured["revision"] == "pinned-base-revision"

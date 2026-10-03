@@ -35,7 +35,7 @@ support belongs to A2 and is outside this checklist.
 - [x] Verify GPU discovery outside the sandbox: 8 L40S GPUs; PyTorch reports CUDA available.
 - [x] Run the existing modulation CPU baseline: 6 passed, 4 deselected.
 - [ ] Establish a compatible complete inference environment, including compiled vLLM extensions.
-- [ ] Inventory checkpoint storage requirements and available GPUs before downloads or inference.
+- [x] Inventory checkpoint storage requirements and available GPUs before downloads or inference.
 
 The CPU baseline only checks existing behavior; it is not evidence of A1 support.
 Machine-specific logs and environment notes live outside the repository in
@@ -54,23 +54,23 @@ GPU occupancy must be checked again before each run.
 
 ### 2. Loader and model implementation
 
-- [ ] Reuse the native single-file entrypoint and existing component loading mechanisms where applicable.
+- [x] Reuse the native single-file entrypoint and existing component loading mechanisms where applicable.
 - [x] Register native H3 single-file configuration and preserve multimodal/reference-input metadata.
-- [ ] Resolve the base repository separately from the checkpoint and load only the required base components.
+- [x] Resolve the base repository separately from the checkpoint and load only the required base components.
 - [ ] Construct and execute the compressed AdaLN layout without expanding it into a full dense projection.
 - [x] Implement FP32 curve interpolation and compressed projection primitives, with endpoint and dense-path regression tests.
 - [x] Select curve time embeddings in the native DiT, load the stored table, and check FP32 invariants after host-weight restore.
 - [ ] Map and validate checkpoint weights, rejecting unsupported layouts and unexpected missing parameters.
 - [x] Validate the complete compressed single-file tensor schema and derive DiT configuration from file descriptors.
 - [ ] Reject unsupported A2 quantized files with actionable errors.
-- [ ] Ensure the selected checkpoint supplies the DiT weights for every task; prevent silent base-DiT fallback.
+- [x] Ensure the selected checkpoint supplies the DiT weights for every task; prevent silent base-DiT fallback.
 - [ ] Preserve the official H3 loading path and integrate with AdaLN caching, offload and parallel loading.
 - [ ] Apply validated Turbo sampling settings without applying merged adapters a second time.
 
 ### 3. Focused regression tests
 
-- [ ] Test weight mapping and base-component selection with small synthetic checkpoints.
-- [ ] Test malformed, incomplete and unsupported checkpoints and clear error reporting.
+- [x] Test weight mapping and base-component selection with small synthetic checkpoints.
+- [x] Test malformed, incomplete and unsupported checkpoints and clear error reporting.
 - [ ] Compare compressed AdaLN outputs with the reference computation on small tensors, documenting tolerances.
 - [ ] Cover task/partition selection and Turbo schedule handling.
 - [ ] Run applicable official H3, single-file loader and configuration regression tests.
