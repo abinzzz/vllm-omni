@@ -132,7 +132,9 @@ tokenizer, text encoder, and audio/video VAEs. Review the checkpoint and base
 model licenses above before downloading or serving them. Use a separate server
 for each beta5 file. The following HSDP4 configuration matches the tested
 1344×768 generation profile; the single-file pipeline and task routing were
-verified through `Omni.generate`, but an HTTP `/v1/videos` server request has
+verified through `Omni.generate`. The real Omni CLI parser and validation also
+accept this command's HSDP4 options and base-revision JSON with a placeholder
+file; no model is loaded in that check. An HTTP `/v1/videos` server request has
 not yet been run on this host.
 
 ```bash
