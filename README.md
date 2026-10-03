@@ -109,6 +109,14 @@ failure that must be diagnosed before A1 can pass; the run is a single
 diagnostic sample, not a benchmark. Its manifest, log and video are under
 `~/chenyb/validation/h3-a1/generation/non-turbo-t2va-hsdp4-50step-branch/`.
 
+The clip-length check requested 5 seconds with the same seed, prompt, checkpoint,
+steps and resolution. H3 aligned this request to 124 frames; that MP4 also decodes
+fully with stereo audio, but its middle frame has the same texture-only failure.
+This rejects clip length below the community node's documented training range
+as the sole cause. Startup took 173.11 s and generation plus mux/write took
+323.54 s on HSDP4. Evidence is under
+`~/chenyb/validation/h3-a1/generation/non-turbo-t2va-hsdp4-50step-duration5/`.
+
 An earlier acceptance-shape run produced three 1344×768, 50-step MP4s, but the
 runner imported vLLM-Omni from the separate Mammoth editable checkout instead
 of this branch. Those outputs and later TP4/HSDP4 initialization failures are
