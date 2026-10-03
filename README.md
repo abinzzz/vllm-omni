@@ -4,7 +4,7 @@
 
 This branch tracks implementation and validation of TenStrip/10Eros-Max beta5
 BF16 Turbo and non-Turbo checkpoints in vLLM-Omni. Support is **in development;
-end-to-end serving is not validated yet**. Keep this checklist current as work progresses; mark an item
+full acceptance validation is not complete yet**. Keep this checklist current as work progresses; mark an item
 complete only when its implementation or validation evidence is recorded.
 
 Branch: `feat/h3-single-file-bf16`
