@@ -361,9 +361,14 @@ logs under `~/chenyb/validation/h3-a1/` for details.
 
 Current evidence covers all six BF16 task/variant cases with HSDP4, a
 non-Turbo T2VA TP2+DLO smoke, and a synthetic compressed-AdaLN TP4 forward.
-Full-resolution DLO, beta5 TP4 and the broader profile matrix remain open;
-evidence and untested combinations are tracked in
-`~/chenyb/validation/h3-a1/PROFILE_MATRIX.md`.
+One beta5 Turbo T2VA case also passed at 1344×768 on TP4: it loaded through
+the four-rank path and wrote a 107-frame MP4 with 32 kHz stereo audio in
+58.12 s including mux/write. The manifest and log are in
+`~/chenyb/validation/h3-a1/generation/turbo-t2va-tp4-8step-1344x768/` and
+`~/chenyb/validation/h3-a1/turbo-t2va-tp4-8step-1344x768.log`. This is one
+task/variant/profile run. Full-resolution DLO, non-Turbo TP4, TP4 FL2VA/Ref2VA
+and the broader profile matrix remain open; evidence and untested combinations
+are tracked in `~/chenyb/validation/h3-a1/PROFILE_MATRIX.md`.
 
 ### 5. Fixed-seed quality and latency evaluation
 
