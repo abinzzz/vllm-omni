@@ -457,9 +457,15 @@ For the first suite item, its official side completed a warmup plus three
 measured seed-42 runs at 439.96, 439.70 and 437.83 s (median 439.70 s);
 startup was 126.08 s and excluded. All four official MP4 hashes matched their
 manifests, with 107-frame video/stereo audio shapes, and all passed full
-`ffmpeg` decode. The paired beta5 repeats are in progress, so these are not yet
-matched latency results. Evidence is in
-`~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo-resident20/generation/00-non-turbo-t2va-seed42/official/`.
+`ffmpeg` decode. The beta5 side completed at 437.654, 437.628 and 437.354 s (median 437.628 s).
+Under this matched TP2+DLO resident-layers=20 profile, the beta5 request was
+0.47% faster by median elapsed time for this seed/task. This is one pair only,
+not a broad performance claim. All beta5 outputs passed manifest hashes and
+full `ffmpeg` decode. Both sides use seed 42, 50 steps and the same 1344×768
+prompt/configuration. Evidence for both is in
+`~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo-resident20/generation/00-non-turbo-t2va-seed42/`.
+LPIPS/CLAP/VBench on the planned measured outputs, plus the other 17 cases,
+remain pending.
 
 An exploratory VBench pass now covers one generated video for each beta5 variant
 and task. The table reports single-video scores for subject consistency,
@@ -474,8 +480,9 @@ left/right/mono cosine is 0.1939/0.1715/0.1592. Official vs beta5 VBench scores
 0.9545/0.8900/0.9964/0.4350. This single toy scene measures output differences,
 not overall quality. Full metrics, per-frame LPIPS and provenance are under
 `~/chenyb/validation/h3-a1/metrics/matched/seed42-t2va/`; aligned video is
-`side-by-side.mp4` there. The other 17 pairs and repeated latency measurements
-remain pending. Raw per-video results and provenance are in `~/chenyb/validation/h3-a1/metrics/`.
+`side-by-side.mp4` there. This is a separate one-off quality pair; the plan-selected
+measured-run quality scores and the other 17 pairs remain pending. Raw per-video
+results and provenance are in `~/chenyb/validation/h3-a1/metrics/`.
 
 | Variant / task | Subject | Background | Motion | Aesthetic |
 | --- | ---: | ---: | ---: | ---: |
