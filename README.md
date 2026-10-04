@@ -411,10 +411,16 @@ historical protocol artifact; use the regenerated plan at
 `~/chenyb/validation/h3-a1/evaluation-20261004/evaluation-plan.json`, which
 points at this worktree and its validated Python environment. The host territory
 was confirmed on 2026-10-04, so the earlier territory gate is cleared. The
-official FL2VA and Ref2VA reference DiT shards total about 132.6
-GB and are being staged in `/dev/shm` because the persistent filesystem has
-about 22 GB free. Matched-seed generation and comparison remain pending until
-that staging finishes.
+official FL2VA and Ref2VA reference DiT shards total 132.6 GB and are staged
+in `/dev/shm`; all 26 transformer payload hashes match the pinned Hub revision.
+An official FL2VA HSDP4 preflight loaded the model on four L40S GPUs, but the
+first 448×256, two-step request ran out of memory: each rank used 44.33 GiB of
+44.40 GiB and rank 3 could not allocate another 74 MiB. No media was produced.
+The failed run is recorded at
+`~/chenyb/validation/h3-a1/official-fl2va-hsdp4-2step-448x256-preflight-r1.log`.
+After the workers exited, this container no longer exposed `/dev/nvidia*`, and
+`nvidia-smi` could not connect to the driver. Official H3 matched-seed
+generation and comparison therefore remain pending until a GPU run can fit.
 
 An exploratory VBench pass now covers one generated video for each beta5 variant
 and task. The table reports single-video scores for subject consistency,
