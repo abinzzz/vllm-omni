@@ -389,8 +389,8 @@ pairs and 36 VBench jobs. The initial plan at
 historical protocol artifact; use the regenerated plan at
 `~/chenyb/validation/h3-a1/evaluation-20261004/evaluation-plan.json`, which
 points at this worktree and its validated Python environment. The host territory
-was confirmed as Singapore on 2026-10-04, so the earlier territory gate is
-cleared. The official FL2VA and Ref2VA reference DiT shards total about 132.6
+was confirmed on 2026-10-04, so the earlier territory gate is cleared. The
+official FL2VA and Ref2VA reference DiT shards total about 132.6
 GB and are being staged in `/dev/shm` because the persistent filesystem has
 about 22 GB free. Matched-seed generation and comparison remain pending until
 that staging finishes.
