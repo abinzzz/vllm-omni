@@ -450,8 +450,9 @@ ID, path and scale in each manifest. Evidence is in
 
 The original TP2+DLO batch was interrupted after its first formal case proved
 too slow with zero resident layers. A replacement plan uses DLO with 20 resident
-layers and GPUs 0 and 1. It has not yet been launched; prior formal-size T2VA
-generation took about 444 seconds per request before startup.
+layers and GPUs 0 and 1. It started on GPUs 0 and 1 at 12:33 UTC; it checks device occupancy before
+each command and stops on its first generation or validation error. Prior
+formal-size T2VA generation took about 444 seconds per request before startup.
 
 An exploratory VBench pass now covers one generated video for each beta5 variant
 and task. The table reports single-video scores for subject consistency,
