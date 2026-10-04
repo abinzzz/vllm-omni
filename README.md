@@ -401,8 +401,10 @@ Metrics are all-frame AlexNet LPIPS v0.1, stereo/mono CLAP embedding cosine,
 and four preselected VBench custom-input dimensions: subject consistency,
 background consistency, motion smoothness and aesthetic quality. The latter
 are dimension scores, not a full standard-suite VBench aggregate. Two matched
-generation pairs (non-Turbo T2VA seeds 42 and 2026) are complete; plan-selected
-quality metrics remain pending for all 18 pairs. Protocol and self-check
+generation pairs (non-Turbo T2VA seeds 42 and 2026) were initially complete.
+The fixed-seed plan now has quality metrics for 14/18 matched pairs; four
+seed-7 FL2VA/Ref2VA variant pairs remain. Current scores and evidence are in
+`~/chenyb/validation/h3-a1/MATCHED_QUALITY_RESULTS.md`. Protocol and self-check
 evidence are in
 `~/chenyb/validation/h3-a1/METRIC_PROTOCOL.md`.
 
