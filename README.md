@@ -515,6 +515,16 @@ frames and stereo audio. Matched LPIPS/CLAP/VBench results are pending. Evidence
 is under
 `~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo-resident20/generation/00-non-turbo-ref2va-seed42/`.
 
+For Turbo Ref2VA at the same resolution and profile, official H3 used the
+pinned LightX2V 8-step adapter via PEFT, recorded in the request manifest.
+Official warmup was 95.641 s and measured runs were 92.388, 92.371 and 92.309 s
+(median 92.371 s). Beta5 warmup was 91.807 s and runs were 88.373, 88.013 and
+87.881 s (median 88.013 s), 4.72% lower by median request time for this single
+seed/task/profile. All eight MP4s passed manifest hash, expected frame/audio
+shape and full-decode checks. Matched LPIPS/CLAP/VBench results are pending.
+Evidence is under
+`~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo-resident20/generation/00-turbo-ref2va-seed42/`.
+
 An exploratory VBench pass now covers one generated video for each beta5 variant
 and task. The table reports single-video scores for subject consistency,
 background consistency, motion smoothness and aesthetic quality, in that order;
