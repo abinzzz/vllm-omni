@@ -904,15 +904,21 @@ class MiniMaxH3Pipeline(
         component_revision = od_config.revision
         checkpoint_path = None
         if single_file:
-            from .single_file import MiniMaxH3SingleFileSpec
+            from .single_file import (
+                MINIMAX_H3_BASE_MODEL,
+                MINIMAX_H3_BASE_REVISION,
+                MiniMaxH3SingleFileSpec,
+            )
 
             # Keep the snapshot filename: Hub cache files are symlinks to blobs.
             checkpoint_path = Path(str(od_config.model)).absolute()
             spec = MiniMaxH3SingleFileSpec.from_file(checkpoint_path)
             od_config.set_tf_model_config(TransformerConfig.from_dict(spec.transformer_config))
             custom_args = od_config.custom_pipeline_args or {}
-            component_model = str(custom_args.get("base_model", "MiniMaxAI/MiniMax-H3"))
+            component_model = str(custom_args.get("base_model", MINIMAX_H3_BASE_MODEL))
             component_revision = custom_args.get("base_revision")
+            if component_revision is None and component_model == MINIMAX_H3_BASE_MODEL:
+                component_revision = MINIMAX_H3_BASE_REVISION
         modular = not single_file and is_minimax_h3_modular(component_model, component_revision)
         self.partition = _minimax_h3_partition_for_task(
             getattr(od_config, "task_type", None),

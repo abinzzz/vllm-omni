@@ -113,9 +113,11 @@ HSDP loading is tested above; production checkpoint profiles still require valid
 - [x] Run focused H3, single-file loader, configuration and two-GPU HSDP regressions.
 - [x] Run repository formatting and lint checks for changed files.
 
-The latest host-side CPU regression run covered the single-file schema/dispatch,
-AdaLN modulation, H3 contracts and packed conditioning: 290 passed and 3 were
-skipped. The log is in `~/chenyb/validation/h3-a1/current-broad-cpu-regression.log`.
+The latest host-side focused H3 regression covered single-file schema/dispatch,
+AdaLN modulation, H3 contracts and packed conditioning: 314 passed and 3 were
+skipped. It includes default-base revision, caller override, custom-base, and
+local-base selection cases. The log is in
+`~/chenyb/validation/h3-a1/current-turn-base-pin-regression.log`.
 An additional synthetic parallel/offload regression passed 62 tests across
 `test_minimax_h3_parallel.py`, `test_minimax_h3_offload.py`,
 `test_minimax_h3_dlo_lifecycle.py`, and
@@ -187,6 +189,12 @@ verified through `Omni.generate`. The real Omni CLI parser and validation also
 accept this command's HSDP4 options and base-revision JSON with a placeholder
 file; no model is loaded in that check. An HTTP `/v1/videos` server request has
 not yet been run on this host.
+
+When `base_model` is omitted from `custom_pipeline_args`, the loader defaults to
+`MiniMaxAI/MiniMax-H3` at the pinned revision
+`42ed227ee7df40d41602854ae760620d6eb651fe`. An explicit `base_revision` remains
+in effect, and a custom `base_model` is not silently assigned the MiniMax
+revision.
 
 ```bash
 export CHECKPOINT=/path/to/10Eros_Max_h3_hybrid_beta5.safetensors
@@ -409,7 +417,7 @@ measured results and limitations without inventing a pass threshold.
 - [ ] Document base-component sources, supported layouts, Turbo settings and validated deployment profiles.
 - [ ] Publish a reviewable validation report with reproduction commands and evidence locations.
 - [x] Review checkpoint/base-component license requirements and document the source declarations and material conditions below.
-- [ ] Review the scoped diff and prepare a handoff with environment, test results and remaining limitations.
+- [x] Review the scoped diff and prepare a handoff with environment, test results and remaining limitations.
 - [ ] After all A1 acceptance work is complete, replace this temporary TODO with final usage documentation
   and a serving-recipe link; remove machine-specific development notes from the README.
 

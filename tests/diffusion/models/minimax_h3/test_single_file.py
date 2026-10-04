@@ -165,7 +165,18 @@ def test_single_file_resolves_serving_stage_without_hub_discovery(tmp_path, chec
 
 @pytest.mark.parametrize("task", ["t2va", "fl2va", "ref2va", None])
 @pytest.mark.parametrize("as_symlink", [False, True])
-def test_pipeline_loads_selected_file_for_each_task(tmp_path, checkpoint_tensors, monkeypatch, task, as_symlink):
+@pytest.mark.parametrize(
+    ("base_source", "expected_revision"),
+    [
+        ("local", None),
+        ("default", "42ed227ee7df40d41602854ae760620d6eb651fe"),
+        ("explicit", "caller-selected-revision"),
+        ("custom-remote", None),
+    ],
+)
+def test_pipeline_loads_selected_file_for_each_task(
+    tmp_path, checkpoint_tensors, monkeypatch, task, as_symlink, base_source, expected_revision
+):
     from vllm.config.load import LoadConfig
     from vllm.distributed import parallel_state
 
@@ -194,6 +205,13 @@ def test_pipeline_loads_selected_file_for_each_task(tmp_path, checkpoint_tensors
         (root / "model_index.json").write_text(
             json.dumps({"_minimax_h3": {"partition": partition.lower(), "tasks": tasks}})
         )
+    base_download_calls = []
+
+    def download_base(**kwargs):
+        base_download_calls.append(kwargs)
+        return str(base)
+
+    monkeypatch.setattr(pipeline_module, "download_weights_from_hf_specific", download_base)
     checkpoint_tensors["adaln_t_table"] = torch.tensor([[0, 4], [2, 8], [10, -4]], dtype=torch.bfloat16)
     checkpoint_tensors["blocks.0.attn.qkv_proj.weight"] = torch.arange(192).reshape(24, 8).to(torch.bfloat16)
     path = tmp_path / "hybrid[beta5].safetensors"
@@ -212,7 +230,12 @@ def test_pipeline_loads_selected_file_for_each_task(tmp_path, checkpoint_tensors
         model_class_name="MiniMaxH3Pipeline",
         task_type=task,
         model_loaded={"text_encoder": False, "vae_encoder": True},
-        custom_pipeline_args={"base_model": str(base)},
+        custom_pipeline_args={
+            "local": {"base_model": str(base)},
+            "default": {},
+            "explicit": {"base_revision": expected_revision},
+            "custom-remote": {"base_model": "Contoso/H3-Components"},
+        }[base_source],
     )
     config.enrich_config()
     pipeline = pipeline_module.MiniMaxH3Pipeline(od_config=config)
@@ -228,6 +251,15 @@ def test_pipeline_loads_selected_file_for_each_task(tmp_path, checkpoint_tensors
     assert "transformer.time_embedder.table" in loaded
     assert all(source.model_or_path == str(path.parent) for source in sources)
     assert set(component_paths) == {str(base / "FL2VA" / component) for component in ("video_vae", "audio_vae")}
+    if base_source == "local":
+        assert base_download_calls == []
+    else:
+        assert len(base_download_calls) == 1
+        expected_model = (
+            "Contoso/H3-Components" if base_source == "custom-remote" else "MiniMaxAI/MiniMax-H3"
+        )
+        assert base_download_calls[0]["model_name_or_path"] == expected_model
+        assert base_download_calls[0]["revision"] == expected_revision
     result = build_checkpoint_binding_plan(
         pipeline,
         dit_modules=tuple((name, getattr(pipeline, name)) for name in pipeline._dit_modules),

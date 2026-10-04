@@ -8,6 +8,9 @@ from typing import Any
 
 from safetensors import safe_open
 
+MINIMAX_H3_BASE_MODEL = "MiniMaxAI/MiniMax-H3"
+MINIMAX_H3_BASE_REVISION = "42ed227ee7df40d41602854ae760620d6eb651fe"
+
 
 @dataclass(frozen=True)
 class MiniMaxH3SingleFileSpec:
