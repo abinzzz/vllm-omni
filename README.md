@@ -116,6 +116,25 @@ HSDP loading is tested above; production checkpoint profiles still require valid
 The latest host-side CPU regression run covered the single-file schema/dispatch,
 AdaLN modulation, H3 contracts and packed conditioning: 290 passed and 3 were
 skipped. The log is in `~/chenyb/validation/h3-a1/current-broad-cpu-regression.log`.
+An additional synthetic parallel/offload regression passed 62 tests across
+`test_minimax_h3_parallel.py`, `test_minimax_h3_offload.py`,
+`test_minimax_h3_dlo_lifecycle.py`, and
+`test_minimax_h3_vae_split_residency.py`. It used CUDA device 0 only because
+the split-residency fixtures create CUDA streams; it did not load checkpoint
+weights. Reproduce from the repository root with:
+
+```bash
+CUDA_VISIBLE_DEVICES=0 PYTHONPATH="$PWD" \
+  /home/huxiaobin/chenyb/.venvs/vllm-029-validation/bin/python -m pytest -q \
+  tests/diffusion/models/minimax_h3/test_minimax_h3_parallel.py \
+  tests/diffusion/models/minimax_h3/test_minimax_h3_offload.py \
+  tests/diffusion/models/minimax_h3/test_minimax_h3_dlo_lifecycle.py \
+  tests/diffusion/models/minimax_h3/test_minimax_h3_vae_split_residency.py
+```
+
+The full log is `~/chenyb/validation/h3-a1/current-turn-parallel-offload-regression.log`.
+This synthetic coverage does not close the real-checkpoint deployment profile
+matrix above.
 An initial in-sandbox run could not allocate localhost sockets and left platform
 fixtures uninitialized; it is not counted as a code failure.
 A synthetic two-GPU HSDP test also passed on CUDA 0/1, covering selected-file
