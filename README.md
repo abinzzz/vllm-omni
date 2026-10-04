@@ -615,8 +615,14 @@ left/right/mono cosine is 0.1939/0.1715/0.1592. Official vs beta5 VBench scores
 not overall quality. Full metrics, per-frame LPIPS and provenance are under
 `~/chenyb/validation/h3-a1/metrics/matched/seed42-t2va/`; aligned video is
 `side-by-side.mp4` there. This is a separate one-off quality pair; the plan-selected
-measured-run quality scores and the other 17 pairs remain pending. Raw per-video
-results and provenance are in `~/chenyb/validation/h3-a1/metrics/`.
+measured-run scores are tracked separately. The fixed-seed plan now has complete
+LPIPS/CLAP and paired official/beta5 VBench results for 14/18 cases: all six
+seed-42 cases, all six seed-2026 cases and both seed-7 T2VA variants. The four
+remaining cases are seed-7 FL2VA and Ref2VA for Turbo and non-Turbo. See
+`~/chenyb/validation/h3-a1/MATCHED_QUALITY_RESULTS.md` for the current paired
+scores and per-case evidence links; regenerate it with
+`summarize-matched-metrics.py` as more jobs finish. Raw per-video exploratory
+results and provenance remain in `~/chenyb/validation/h3-a1/metrics/`.
 
 | Variant / task | Subject | Background | Motion | Aesthetic |
 | --- | ---: | ---: | ---: | ---: |
