@@ -502,6 +502,15 @@ a narrow latency result, not an overall quality or performance claim; planned
 LPIPS/CLAP/VBench for this pair remain pending. Evidence is in
 `~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo-resident20/generation/00-turbo-fl2va-seed42/`.
 
+For the first non-Turbo Ref2VA seed-42 case, official H3 completed with the
+suite prompt and matching appearance image at 1344×768, 50 steps and TP2+DLO
+resident-layers=20. Warmup was 486.670 s and measured runs were 481.751,
+481.802 and 481.753 s (median 481.753 s); startup was 124.435 s and excluded.
+All four MP4s matched manifest hashes and passed full decode with 107 frames
+and stereo audio. This is the official baseline only; the beta5 side is running
+and matched latency/quality results are pending. Evidence is under
+`~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo-resident20/generation/00-non-turbo-ref2va-seed42/official/`.
+
 An exploratory VBench pass now covers one generated video for each beta5 variant
 and task. The table reports single-video scores for subject consistency,
 background consistency, motion smoothness and aesthetic quality, in that order;
