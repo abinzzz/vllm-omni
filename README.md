@@ -407,10 +407,12 @@ matched-seed A/B results remain pending. Protocol and self-check evidence are in
 The three-seed comparison plan has 36 generation commands, 18 matched metric
 pairs and 36 VBench jobs. The initial plan at
 `~/chenyb/validation/h3-a1/evaluation-20261003/evaluation-plan.json` is a
-historical protocol artifact; use the regenerated plan at
-`~/chenyb/validation/h3-a1/evaluation-20261004/evaluation-plan.json`, which
-points at this worktree and its validated Python environment. The host territory
-was confirmed on 2026-10-04, so the earlier territory gate is cleared. The
+historical protocol artifact. The HSDP4 plan at
+`~/chenyb/validation/h3-a1/evaluation-20261004/evaluation-plan.json` is also
+superseded: its official FL2VA preflight OOMed. Use the regenerated TP2+DLO
+plan at `~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo/evaluation-plan.json`;
+it points at this worktree and uses the same profile for both sides. The host
+territory was confirmed on 2026-10-04, so the earlier territory gate is cleared.
 The official FL2VA and Ref2VA reference DiT shards total 132.6 GB. All 26
 transformer payload hashes match the pinned Hub revision. An official FL2VA
 HSDP4 preflight loaded the model on four L40S GPUs, but the 448×256, two-step
@@ -432,6 +434,21 @@ writing complete outputs. The ordinary restricted shell does not expose GPU
 device nodes or the host `/dev/shm`; task-scoped elevated execution can access
 the host GPUs and the already staged, hash-verified official weights. Official
 H3 matched-seed generation and comparison remain pending.
+
+The official Turbo + LightX2V adapter comparison uses the H3 PEFT loader and
+sets a `lora_request` on the sampling parameters. A preflight with the generic
+distilled-LoRA backend, and a PEFT preflight without the request field, produced
+the same MP4 SHA as unadapted official H3. With PEFT plus the explicit request,
+the worker logged adapter activation and the 8-step output hash differed from
+the unadapted output; the MP4 passed full decode. This 448×256 check validates
+adapter application, not Turbo quality. The evaluation runner records adapter
+ID, path and scale in each manifest. Evidence is in
+`~/chenyb/validation/h3-a1/generation/official-turbo-lightx-t2va-tp2-dlo-active-lora-smoke-448x256/`.
+
+The fixed-seed TP2+DLO batch is running sequentially on GPUs 0 and 1. Per-case
+logs and `generation-status.json` are under
+`~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo/`; the job checks device
+occupancy before each case and stops on the first failed generation.
 
 An exploratory VBench pass now covers one generated video for each beta5 variant
 and task. The table reports single-video scores for subject consistency,
