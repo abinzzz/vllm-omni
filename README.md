@@ -489,6 +489,20 @@ LPIPS/CLAP/VBench remains pending; this timing is not a general performance
 claim. Evidence is under
 `~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo-resident20/generation/01-turbo-t2va-seed2026/`.
 
+The seed-2026 non-Turbo FL2VA pair completed with the suite's first/last-frame
+conditioning. Official H3 warmup was 522.949 s and measured runs were 518.682,
+518.647 and 518.660 s (median 518.660 s); beta5 warmup was 522.169 s and runs
+were 518.547, 518.057 and 518.096 s (median 518.096 s). Beta5 was 0.11% lower
+by median request time for this task/profile. The Turbo FL2VA pair, using the
+pinned LightX2V 8-step adapter on official H3, measured 98.825, 98.415 and
+98.414 s (median 98.415 s) after a 104.907 s warmup; beta5 measured 94.861,
+94.669 and 94.602 s (median 94.669 s) after a 97.749 s warmup, 3.81% lower by
+median. All 16 MP4s passed manifest-hash, 107-frame video, 32 kHz stereo-audio
+shape and complete `ffmpeg` decode checks. These are narrow latency results,
+not overall quality or performance claims; matched LPIPS/CLAP/VBench results
+remain pending. Evidence is under
+`~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo-resident20/generation/01-{non-turbo,turbo}-fl2va-seed2026/`.
+
 For the first non-Turbo FL2VA seed-42 case, official H3 and beta5 completed with
 the same TP2+DLO resident-layers=20 profile, suite prompt and first/last images.
 Official warmup was 526.305 s and measured runs were 519.705, 519.736 and
