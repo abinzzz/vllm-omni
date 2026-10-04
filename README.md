@@ -467,6 +467,15 @@ prompt/configuration. Evidence for both is in
 LPIPS/CLAP/VBench on the planned measured outputs, plus the other 17 cases,
 remain pending.
 
+For the first non-Turbo FL2VA seed-42 case, official H3 has completed with the
+same TP2+DLO resident-layers=20 profile, suite prompt and first/last images.
+Warmup was 526.305 s and measured runs were 519.705, 519.736 and 519.223 s
+(median 519.705 s); startup was 113.006 s and excluded. All four MP4 hashes
+matched their manifests and passed full decode with 107 frames and stereo
+audio. The beta5 side is running, so this is not yet a matched latency result.
+Evidence is under
+`~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo-resident20/generation/00-non-turbo-fl2va-seed42/official/`.
+
 The official Turbo T2VA side for seed 42 also completed with the pinned
 LightX2V 8-step adapter loaded and activated through H3's PEFT path. Its warmup
 was 89.126 s and three measured runs were 84.773, 84.884 and 84.616 s (median
