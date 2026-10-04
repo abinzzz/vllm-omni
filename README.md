@@ -467,6 +467,14 @@ prompt/configuration. Evidence for both is in
 LPIPS/CLAP/VBench on the planned measured outputs, plus the other 17 cases,
 remain pending.
 
+The official Turbo T2VA side for seed 42 also completed with the pinned
+LightX2V 8-step adapter loaded and activated through H3's PEFT path. Its warmup
+was 89.126 s and three measured runs were 84.773, 84.884 and 84.616 s (median
+84.773 s); startup was 114.36 s and excluded. The four MP4s matched manifest
+hashes and passed full decode. This is only the official side of the pair; the
+beta5 Turbo case is now running. Evidence is under
+`~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo-resident20/generation/00-turbo-t2va-seed42/official/`.
+
 An exploratory VBench pass now covers one generated video for each beta5 variant
 and task. The table reports single-video scores for subject consistency,
 background consistency, motion smoothness and aesthetic quality, in that order;
