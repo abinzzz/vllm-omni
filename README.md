@@ -383,11 +383,17 @@ are dimension scores, not a full standard-suite VBench aggregate. Actual
 matched-seed A/B results remain pending. Protocol and self-check evidence are in
 `~/chenyb/validation/h3-a1/METRIC_PROTOCOL.md`.
 
-The three-seed comparison plan has been generated and its inputs and paths
-validated: 36 generation commands, 18 matched metric pairs and 36 VBench jobs.
-The plan is at `~/chenyb/validation/h3-a1/evaluation-20261003/evaluation-plan.json`;
-none of those model jobs has been executed pending confirmation of the host's
-permitted license territory.
+The three-seed comparison plan has 36 generation commands, 18 matched metric
+pairs and 36 VBench jobs. The initial plan at
+`~/chenyb/validation/h3-a1/evaluation-20261003/evaluation-plan.json` is a
+historical protocol artifact; use the regenerated plan at
+`~/chenyb/validation/h3-a1/evaluation-20261004/evaluation-plan.json`, which
+points at this worktree and its validated Python environment. The host territory
+was confirmed as Singapore on 2026-10-04, so the earlier territory gate is
+cleared. The official FL2VA and Ref2VA reference DiT shards total about 132.6
+GB and are being staged in `/dev/shm` because the persistent filesystem has
+about 22 GB free. Matched-seed generation and comparison remain pending until
+that staging finishes.
 
 An exploratory VBench pass now covers one generated video for each beta5 variant
 and task. The table reports single-video scores for subject consistency,
