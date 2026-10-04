@@ -523,6 +523,16 @@ frame/audio shape and complete `ffmpeg` decode checks. Matched LPIPS/CLAP/VBench
 remains pending; this is a narrow latency result. Evidence is under
 `~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo-resident20/generation/01-turbo-ref2va-seed2026/`.
 
+The non-Turbo T2VA seed-7 pair completed at 1344×768, 50 steps and TP2+DLO
+resident-layers=20 with the same prompt. Official H3 warmup was 445.831 s and
+measured runs were 439.796, 439.479 and 439.178 s (median 439.479 s); beta5
+warmup was 442.881 s and measured runs were 438.348, 438.411 and 438.100 s
+(median 438.348 s), 0.26% lower by median request time. All eight MP4s passed
+manifest hash, expected frame/audio shape and complete `ffmpeg` decode checks.
+This is a narrow timing result; matched LPIPS/CLAP/VBench remains pending.
+Evidence is under
+`~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo-resident20/generation/02-non-turbo-t2va-seed7/`.
+
 For the first non-Turbo FL2VA seed-42 case, official H3 and beta5 completed with
 the same TP2+DLO resident-layers=20 profile, suite prompt and first/last images.
 Official warmup was 526.305 s and measured runs were 519.705, 519.736 and
