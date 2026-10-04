@@ -400,9 +400,10 @@ at 1344×768 and 24 FPS, with matching inputs across each task and A/B pair.
 Metrics are all-frame AlexNet LPIPS v0.1, stereo/mono CLAP embedding cosine,
 and four preselected VBench custom-input dimensions: subject consistency,
 background consistency, motion smoothness and aesthetic quality. The latter
-are dimension scores, not a full standard-suite VBench aggregate. One matched
-non-Turbo T2VA pair (seed 42) is now evaluated; the remaining 17 pairs remain
-pending. Protocol and self-check evidence are in
+are dimension scores, not a full standard-suite VBench aggregate. Two matched
+generation pairs (non-Turbo T2VA seeds 42 and 2026) are complete; plan-selected
+quality metrics remain pending for all 18 pairs. Protocol and self-check
+evidence are in
 `~/chenyb/validation/h3-a1/METRIC_PROTOCOL.md`.
 
 The three-seed comparison plan has 36 generation commands, 18 matched metric
@@ -466,6 +467,17 @@ prompt/configuration. Evidence for both is in
 `~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo-resident20/generation/00-non-turbo-t2va-seed42/`.
 Plan-selected LPIPS/CLAP/VBench on measured outputs across all 18 matched pairs
 remain pending.
+
+A second non-Turbo T2VA comparison completed at seed 2026 with the same prompt,
+resolution, 50 steps and TP2+DLO resident-layers=20 profile. Official H3 warmup
+was 445.936 s and measured runs were 440.493, 440.224 and 440.118 s (median
+440.224 s); beta5 warmup was 441.767 s and measured runs were 439.643, 439.492
+and 438.817 s (median 439.492 s). Beta5 was 0.17% lower by median request time
+for this seed/task/profile. All eight MP4s matched their manifest hashes and
+passed expected frame/audio shape and full-decode checks. Matched LPIPS/CLAP/
+VBench results remain pending; this small timing difference is not a general
+performance claim. Evidence is under
+`~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo-resident20/generation/01-non-turbo-t2va-seed2026/`.
 
 For the first non-Turbo FL2VA seed-42 case, official H3 and beta5 completed with
 the same TP2+DLO resident-layers=20 profile, suite prompt and first/last images.
