@@ -411,21 +411,27 @@ historical protocol artifact; use the regenerated plan at
 `~/chenyb/validation/h3-a1/evaluation-20261004/evaluation-plan.json`, which
 points at this worktree and its validated Python environment. The host territory
 was confirmed on 2026-10-04, so the earlier territory gate is cleared. The
-The official FL2VA and Ref2VA reference DiT shards total 132.6 GB; all 26
-transformer payload hashes matched the pinned Hub revision when they were staged
-in `/dev/shm` for the preflight.
-An official FL2VA HSDP4 preflight loaded the model on four L40S GPUs, but the
-first 448×256, two-step request ran out of memory: each rank used 44.33 GiB of
-44.40 GiB and rank 3 could not allocate another 74 MiB. No media was produced.
-The failed run is recorded at
+The official FL2VA and Ref2VA reference DiT shards total 132.6 GB. All 26
+transformer payload hashes match the pinned Hub revision. An official FL2VA
+HSDP4 preflight loaded the model on four L40S GPUs, but the 448×256, two-step
+request ran out of memory: each rank used 44.33 GiB of 44.40 GiB and rank 3
+could not allocate another 74 MiB. The failed run is recorded at
 `~/chenyb/validation/h3-a1/official-fl2va-hsdp4-2step-448x256-preflight-r1.log`.
-After the workers exited, this container no longer exposed `/dev/nvidia*`, and
-`nvidia-smi` could not connect to the driver. On 2026-10-04 at 11:12 UTC, the
-host still listed eight L40S devices under `/proc/driver/nvidia/gpus`, but the
-container had no NVIDIA device nodes; `/dev/shm` was empty and the HF cache did
-not contain the FL2VA/Ref2VA transformer shards. After GPU access and staging
-are restored, retry the official preflight with TP2+DLO to reduce per-GPU
-residency. Official H3 matched-seed generation and comparison remain pending.
+
+The same three official tasks then completed one 448×256, two-step request
+each with TP2+DLO on GPUs 0 and 1. T2VA, FL2VA and Ref2VA all produced 107-frame
+H.264 video with 32 kHz stereo AAC; each MP4 hash matched its manifest and
+passed full `ffmpeg` decode. Generate-plus-mux/write times were 9.17 s, 12.42 s
+and 14.57 s, respectively; each worker reported 1.81 GiB process-scoped GPU
+memory after model initialization. These are task-path preflights, not matched
+quality or production-latency results. Evidence and manifests are in
+`~/chenyb/validation/h3-a1/generation/official-{t2va,fl2va,ref2va}-tp2-dlo-2step-448x256-r1/`.
+All three DLO runs exited with status 0 but emitted the known Orchestrator
+30-second shutdown timeout and shared-memory resource-tracker warning after
+writing complete outputs. The ordinary restricted shell does not expose GPU
+device nodes or the host `/dev/shm`; task-scoped elevated execution can access
+the host GPUs and the already staged, hash-verified official weights. Official
+H3 matched-seed generation and comparison remain pending.
 
 An exploratory VBench pass now covers one generated video for each beta5 variant
 and task. The table reports single-video scores for subject consistency,
