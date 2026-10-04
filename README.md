@@ -464,7 +464,7 @@ not a broad performance claim. All beta5 outputs passed manifest hashes and
 full `ffmpeg` decode. Both sides use seed 42, 50 steps and the same 1344×768
 prompt/configuration. Evidence for both is in
 `~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo-resident20/generation/00-non-turbo-t2va-seed42/`.
-LPIPS/CLAP/VBench on the planned measured outputs, plus the other 17 cases,
+Plan-selected LPIPS/CLAP/VBench on measured outputs across all 18 matched pairs
 remain pending.
 
 For the first non-Turbo FL2VA seed-42 case, official H3 and beta5 completed with
@@ -489,6 +489,18 @@ MP4s passed manifest hash and full decode checks. This is a narrow timing result
 not an overall quality claim; plan-selected LPIPS/CLAP/VBench scores are still
 pending. Evidence is under
 `~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo-resident20/generation/00-turbo-t2va-seed42/`.
+
+The matched Turbo FL2VA seed-42 case has also completed with the pinned
+LightX2V 8-step adapter. The official adapter loaded through H3's PEFT path and
+worker logs confirm it was activated for task `fl2v`. Official warmup was
+104.800 s and measured runs were 98.949, 98.764 and 98.362 s (median 98.764 s);
+beta5 warmup was 98.369 s and measured runs were 95.170, 94.854 and 94.781 s
+(median 94.854 s). Startup was 118.738 s for official H3 and excluded. Beta5
+was 3.96% faster by median request time for this seed/task/profile. All eight
+MP4s passed manifest hash, expected shape/audio and full-decode checks. This is
+a narrow latency result, not an overall quality or performance claim; planned
+LPIPS/CLAP/VBench for this pair remain pending. Evidence is in
+`~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo-resident20/generation/00-turbo-fl2va-seed42/`.
 
 An exploratory VBench pass now covers one generated video for each beta5 variant
 and task. The table reports single-video scores for subject consistency,
