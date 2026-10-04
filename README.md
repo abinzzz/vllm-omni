@@ -400,8 +400,9 @@ at 1344×768 and 24 FPS, with matching inputs across each task and A/B pair.
 Metrics are all-frame AlexNet LPIPS v0.1, stereo/mono CLAP embedding cosine,
 and four preselected VBench custom-input dimensions: subject consistency,
 background consistency, motion smoothness and aesthetic quality. The latter
-are dimension scores, not a full standard-suite VBench aggregate. Actual
-matched-seed A/B results remain pending. Protocol and self-check evidence are in
+are dimension scores, not a full standard-suite VBench aggregate. One matched
+non-Turbo T2VA pair (seed 42) is now evaluated; the remaining 17 pairs remain
+pending. Protocol and self-check evidence are in
 `~/chenyb/validation/h3-a1/METRIC_PROTOCOL.md`.
 
 The three-seed comparison plan has 36 generation commands, 18 matched metric
@@ -410,7 +411,8 @@ pairs and 36 VBench jobs. The initial plan at
 historical protocol artifact. The HSDP4 plan at
 `~/chenyb/validation/h3-a1/evaluation-20261004/evaluation-plan.json` is also
 superseded: its official FL2VA preflight OOMed. Use the regenerated TP2+DLO
-plan at `~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo/evaluation-plan.json`;
+resident-layers=20 plan at
+`~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo-resident20/evaluation-plan.json`;
 it points at this worktree and uses the same profile for both sides. The host
 territory was confirmed on 2026-10-04, so the earlier territory gate is cleared.
 The official FL2VA and Ref2VA reference DiT shards total 132.6 GB. All 26
@@ -432,8 +434,9 @@ All three DLO runs exited with status 0 but emitted the known Orchestrator
 30-second shutdown timeout and shared-memory resource-tracker warning after
 writing complete outputs. The ordinary restricted shell does not expose GPU
 device nodes or the host `/dev/shm`; task-scoped elevated execution can access
-the host GPUs and the already staged, hash-verified official weights. Official
-H3 matched-seed generation and comparison remain pending.
+the host GPUs and the already staged, hash-verified official weights. The three
+official task-path preflights are complete. One formal-size, matched seed-42
+non-Turbo T2VA pair has also completed and passed full media decode.
 
 The official Turbo + LightX2V adapter comparison uses the H3 PEFT loader and
 sets a `lora_request` on the sampling parameters. A preflight with the generic
@@ -445,19 +448,26 @@ adapter application, not Turbo quality. The evaluation runner records adapter
 ID, path and scale in each manifest. Evidence is in
 `~/chenyb/validation/h3-a1/generation/official-turbo-lightx-t2va-tp2-dlo-active-lora-smoke-448x256/`.
 
-The fixed-seed TP2+DLO batch is running sequentially on GPUs 0 and 1. Per-case
-logs and `generation-status.json` are under
-`~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo/`; the job checks device
-occupancy before each case and stops on the first failed generation.
+The original TP2+DLO batch was interrupted after its first formal case proved
+too slow with zero resident layers. A replacement plan uses DLO with 20 resident
+layers and GPUs 0 and 1. It has not yet been launched; prior formal-size T2VA
+generation took about 444 seconds per request before startup.
 
 An exploratory VBench pass now covers one generated video for each beta5 variant
 and task. The table reports single-video scores for subject consistency,
 background consistency, motion smoothness and aesthetic quality, in that order;
 these are not matched-seed comparisons and do not establish that either model is
 better. Turbo FL2VA's lower subject-consistency score needs paired evaluation;
-it does not by itself establish a motion regression. The official H3/LightX2V A/B,
-LPIPS and audio-similarity evaluation remains pending. Raw per-video results and
-provenance are in `~/chenyb/validation/h3-a1/metrics/`.
+it does not by itself establish a motion regression. One paired comparison is
+now complete. For non-Turbo T2VA, seed 42, 50 steps, 1344×768 and TP2+DLO
+resident-layers=20, mean all-frame LPIPS is 0.2688; CLAP
+left/right/mono cosine is 0.1939/0.1715/0.1592. Official vs beta5 VBench scores
+(subject, background, motion, aesthetic) are 0.9794/0.9708/0.9965/0.4143 and
+0.9545/0.8900/0.9964/0.4350. This single toy scene measures output differences,
+not overall quality. Full metrics, per-frame LPIPS and provenance are under
+`~/chenyb/validation/h3-a1/metrics/matched/seed42-t2va/`; aligned video is
+`side-by-side.mp4` there. The other 17 pairs and repeated latency measurements
+remain pending. Raw per-video results and provenance are in `~/chenyb/validation/h3-a1/metrics/`.
 
 | Variant / task | Subject | Background | Motion | Aesthetic |
 | --- | ---: | ---: | ---: | ---: |
