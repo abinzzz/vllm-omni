@@ -453,6 +453,13 @@ too slow with zero resident layers. A replacement plan uses DLO with 20 resident
 layers and GPUs 0 and 1. It started on GPUs 0 and 1 at 12:33 UTC; it checks device occupancy before
 each command and stops on its first generation or validation error. Prior
 formal-size T2VA generation took about 444 seconds per request before startup.
+For the first suite item, its official side completed a warmup plus three
+measured seed-42 runs at 439.96, 439.70 and 437.83 s (median 439.70 s);
+startup was 126.08 s and excluded. All four official MP4 hashes matched their
+manifests, with 107-frame video/stereo audio shapes, and all passed full
+`ffmpeg` decode. The paired beta5 repeats are in progress, so these are not yet
+matched latency results. Evidence is in
+`~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo-resident20/generation/00-non-turbo-t2va-seed42/official/`.
 
 An exploratory VBench pass now covers one generated video for each beta5 variant
 and task. The table reports single-video scores for subject consistency,
