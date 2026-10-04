@@ -360,15 +360,30 @@ logs under `~/chenyb/validation/h3-a1/` for details.
 - [ ] Validate the parallelism and offload profile matrix and record unsupported or untested combinations.
 
 Current evidence covers all six BF16 task/variant cases with HSDP4, a
-non-Turbo T2VA TP2+DLO smoke, and a synthetic compressed-AdaLN TP4 forward.
-All three beta5 Turbo tasks now pass at 1344×768 on TP4. T2VA produced one
+synthetic compressed-AdaLN TP4 forward, and full-resolution T2VA with TP2 plus
+distributed layerwise offload (DLO) for both checkpoints. Non-Turbo used 50
+steps and completed one warmup plus three measured requests at 437.64, 523.73
+and 436.85 s; the 523.73 s request overlapped with the Turbo DLO run. Turbo
+used 8 steps and completed one warmup plus three measured requests at 80.56,
+82.39 and 80.45 s. All outputs contain 107 video frames and 32 kHz stereo
+audio. Timings cover generation plus MP4 mux/write, excluding model startup
+and verification. Manifests and logs are in
+`~/chenyb/validation/h3-a1/generation/non-turbo-t2va-tp2-dlo-50step-1344x768/`
+and `~/chenyb/validation/h3-a1/generation/turbo-t2va-tp2-dlo-8step-1344x768/`,
+with matching `*-tp2-dlo-*.log` files. Both DLO runs emitted the framework's
+30 s Orchestrator shutdown timeout and a shared-memory resource-tracker warning
+after producing their complete manifests; the same shutdown timeout appears
+in the earlier TP2+DLO smoke. The worker processes exited and released their
+GPUs, but clean DLO shutdown remains unverified.
+
+All three beta5 Turbo tasks also pass at 1344×768 on TP4. T2VA produced one
 107-frame MP4 with 32 kHz stereo audio in 58.12 s including mux/write. FL2VA
 and Ref2VA each had one warmup and three measured requests: 64.652–64.719 s
 and 59.663–59.732 s, respectively. Per-run manifests and logs are in
 `~/chenyb/validation/h3-a1/generation/turbo-{t2va,fl2va,ref2va}-tp4-8step-1344x768/`
-and the matching `turbo-*-tp4-8step-1344x768.log` files. This covers Turbo
-only. Full-resolution DLO, non-Turbo TP4 and the broader profile matrix remain
-open; evidence and untested combinations are tracked in
+and the matching `turbo-*-tp4-8step-1344x768.log` files. Non-Turbo TP4,
+FL2VA/Ref2VA under DLO and the broader profile matrix remain open; evidence and
+untested combinations are tracked in
 `~/chenyb/validation/h3-a1/PROFILE_MATRIX.md`.
 
 ### 5. Fixed-seed quality and latency evaluation
