@@ -59,6 +59,16 @@ the recorded host profile, not a general compatibility claim.
 - [x] Record the Turbo step count, native H3 shifted-sigma settings, guidance and baked-in deltas.
 - [x] Finalize the loading interface and compatibility design from this evidence.
 
+The pinned base snapshot's FL2VA audio and video VAE payloads have SHA256
+`37dddc2f…dade5ea2` and `5f0c2e16…befe0d3`. The official Ref2VA audio and
+video VAE entries report the same full hashes ([audio](https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/ce18b0e8462a05d7dbf960e3e3a3517570f20b07/Ref2VA/audio_vae/model.safetensors),
+[video](https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/c4ccdbc27aed6da9462aae7de67d313e47d055b4/Ref2VA/video_vae/source/model.safetensors)).
+The first Ref2VA text-encoder shard also matches the pinned shared encoder at
+SHA256 `6b9dfbc9…cca27cb` ([Ref2VA shard](https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/Ref2VA/text_encoder/model-00001-of-00014.safetensors)).
+This supports reusing the FL2VA base component tree for Ref2VA; full pinned
+FL2VA payload checksums are recorded in
+`~/chenyb/validation/h3-a1/base-payload-verification.json`.
+
 ### 2. Loader and model implementation
 
 - [x] Reuse the native single-file entrypoint and existing component loading mechanisms where applicable.
