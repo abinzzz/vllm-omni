@@ -507,9 +507,13 @@ suite prompt and matching appearance image at 1344×768, 50 steps and TP2+DLO
 resident-layers=20. Warmup was 486.670 s and measured runs were 481.751,
 481.802 and 481.753 s (median 481.753 s); startup was 124.435 s and excluded.
 All four MP4s matched manifest hashes and passed full decode with 107 frames
-and stereo audio. This is the official baseline only; the beta5 side is running
-and matched latency/quality results are pending. Evidence is under
-`~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo-resident20/generation/00-non-turbo-ref2va-seed42/official/`.
+and stereo audio. The beta5 side completed with a 482.945 s warmup and measured
+runs of 480.237, 480.575 and 480.886 s (median 480.575 s); startup is excluded.
+This is 0.24% lower median request time than official H3 for this seed/task/
+profile. All eight MP4s matched manifest hashes and passed full decode with 107
+frames and stereo audio. Matched LPIPS/CLAP/VBench results are pending. Evidence
+is under
+`~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo-resident20/generation/00-non-turbo-ref2va-seed42/`.
 
 An exploratory VBench pass now covers one generated video for each beta5 variant
 and task. The table reports single-video scores for subject consistency,
