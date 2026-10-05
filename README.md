@@ -654,6 +654,9 @@ full ffmpeg decode. These measurements characterize this prompt and seed;
 they do not establish general quality or audio superiority. Beta5 media checks
 are recorded in
 `~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo-resident20/turbo-fl2va-seed7-beta5-media-validation.json`.
+The matched run-01 visual comparison (official on the left, beta5 on the right)
+is `~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo-resident20/metrics/matched/02-turbo-fl2va-seed7/side-by-side.mp4`;
+its source hashes and output metadata are in the neighboring JSON manifest.
 
 | Variant / task | Subject | Background | Motion | Aesthetic |
 | --- | ---: | ---: | ---: | ---: |
