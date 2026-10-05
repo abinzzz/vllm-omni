@@ -357,7 +357,7 @@ logs under `~/chenyb/validation/h3-a1/` for details.
 - [x] Verify MP4 decoding, dimensions, frame count, duration and audio track for every case.
 - [x] Verify that first/last-frame and reference conditioning enter the intended inference path.
 - [x] Verify actual checkpoint weight consumption for each task from the selected-file runtime manifests.
-- [ ] Validate the parallelism and offload profile matrix and record unsupported or untested combinations.
+- [x] Validate the parallelism and offload profile matrix and record unsupported or untested combinations.
 
 Current evidence covers all six BF16 task/variant cases with HSDP4, a
 synthetic compressed-AdaLN TP4 forward, and full-resolution T2VA with TP2 plus
@@ -376,14 +376,24 @@ after producing their complete manifests; the same shutdown timeout appears
 in the earlier TP2+DLO smoke. The worker processes exited and released their
 GPUs, but clean DLO shutdown remains unverified.
 
-All three beta5 Turbo tasks also pass at 1344×768 on TP4. T2VA produced one
+All three beta5 Turbo tasks pass at 1344×768 on TP4. T2VA produced one
 107-frame MP4 with 32 kHz stereo audio in 58.12 s including mux/write. FL2VA
 and Ref2VA each had one warmup and three measured requests: 64.652–64.719 s
 and 59.663–59.732 s, respectively. Per-run manifests and logs are in
 `~/chenyb/validation/h3-a1/generation/turbo-{t2va,fl2va,ref2va}-tp4-8step-1344x768/`
-and the matching `turbo-*-tp4-8step-1344x768.log` files. Non-Turbo TP4,
-FL2VA/Ref2VA under DLO and the broader profile matrix remain open; evidence and
-untested combinations are tracked in
+and the matching `turbo-*-tp4-8step-1344x768.log` files.
+
+The production-shape beta5 TP2+DLO resident-layers=0 profile now has one
+full-resolution result for each of T2VA, FL2VA and Ref2VA in both variants.
+The new isolated non-Turbo FL2VA and Ref2VA requests completed in 521.032 s and
+483.138 s; Turbo FL2VA and Ref2VA completed in 98.671 s and 90.012 s. Their
+MP4 hash, shape, finite-audio, codec and full-decode checks all passed. The
+runs printed the generic Orchestrator 30 s shutdown timeout and resource-tracker
+warning but exited 0. A concurrent non-Turbo FL2VA DLO attempt timed out at step
+30 while the matched Turbo Ref2VA case ran on another GPU pair; an isolated
+retry succeeded, so concurrent DLO operation remains unverified. Non-Turbo TP4,
+pre-sharded HSDP and other GPU/replication/offload combinations also remain
+unverified or explicitly unsupported. Evidence and the profile matrix are in
 `~/chenyb/validation/h3-a1/PROFILE_MATRIX.md`.
 
 ### 5. Fixed-seed quality and latency evaluation
