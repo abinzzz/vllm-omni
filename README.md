@@ -545,6 +545,22 @@ complete `ffmpeg` decode checks. This is a narrow timing result; matched
 LPIPS/CLAP/VBench remains pending. Evidence is under
 `~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo-resident20/generation/02-turbo-t2va-seed7/`.
 
+The non-Turbo FL2VA seed-7 pair completed at 1344×768, 50 steps and
+TP2+DLO resident-layers=20 with identical keyframe inputs. Official H3 warmup
+was 522.547 s and measured runs were 518.322, 518.334 and 518.251 s (median
+518.322 s); beta5 warmup was 522.951 s and measured runs were 517.749,
+518.001 and 518.160 s (median 518.001 s), 0.06% lower by median request
+time. All eight MP4s passed manifest SHA, expected audio/video shapes,
+codec checks and complete `ffmpeg` decode. On the matched measured sample,
+mean all-frame LPIPS was 0.018618; CLAP left/right/mono was
+0.993620/0.994144/0.987819. Official vs beta5 VBench
+(subject/background/motion/aesthetic) was
+0.976621/0.980545/0.997124/0.303622 vs
+0.962983/0.970924/0.996902/0.299319. These values describe this paired
+toy scene only, not general quality superiority or synchronization. Media
+validation is in `~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo-resident20/non-turbo-fl2va-seed7-{official,beta5}-media-validation.json`;
+per-case quality evidence is linked in `MATCHED_QUALITY_RESULTS.md`.
+
 For the first non-Turbo FL2VA seed-42 case, official H3 and beta5 completed with
 the same TP2+DLO resident-layers=20 profile, suite prompt and first/last images.
 Official warmup was 526.305 s and measured runs were 519.705, 519.736 and
@@ -618,9 +634,10 @@ not overall quality. Full metrics, per-frame LPIPS and provenance are under
 `~/chenyb/validation/h3-a1/metrics/matched/seed42-t2va/`; aligned video is
 `side-by-side.mp4` there. This is a separate one-off quality pair; the plan-selected
 measured-run scores are tracked separately. The fixed-seed plan now has complete
-LPIPS/CLAP and paired official/beta5 VBench results for 14/18 cases: all six
-seed-42 cases, all six seed-2026 cases and both seed-7 T2VA variants. The four
-remaining cases are seed-7 FL2VA and Ref2VA for Turbo and non-Turbo. See
+LPIPS/CLAP and paired official/beta5 VBench results for 15/18 cases: all six
+seed-42 cases, all six seed-2026 cases, both seed-7 T2VA variants and the
+seed-7 non-Turbo FL2VA pair. Three cases remain: seed-7 Turbo FL2VA and both
+seed-7 Ref2VA variants. See
 `~/chenyb/validation/h3-a1/MATCHED_QUALITY_RESULTS.md` for the current paired
 scores and per-case evidence links; regenerate it with
 `summarize-matched-metrics.py` as more jobs finish. Raw per-video exploratory
