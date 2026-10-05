@@ -406,7 +406,17 @@ The fixed-seed plan now has quality metrics for all 18/18 matched pairs.
 Current scores and evidence are in
 `~/chenyb/validation/h3-a1/MATCHED_QUALITY_RESULTS.md`. Protocol and self-check
 evidence are in
-`~/chenyb/validation/h3-a1/METRIC_PROTOCOL.md`.
+`~/chenyb/validation/h3-a1/METRIC_PROTOCOL.md`. An independent media audit
+rechecked all 144 MP4 outputs across the 36 generation commands: manifest SHA,
+107 decoded H.264 frames at 1344×768, stereo 32 kHz AAC, latent-audio shape and
+finite values, and complete `ffmpeg` decode all passed. Evidence is in
+`~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo-resident20/full-media-audit.json`;
+reproduce with:
+
+```bash
+python ~/chenyb/validation/h3-a1/audit-fixed-seed-media.py \
+  ~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo-resident20
+```
 
 The three-seed comparison plan has 36 generation commands, 18 matched metric
 pairs and 36 VBench jobs. The initial plan at
