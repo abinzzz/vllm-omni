@@ -389,11 +389,11 @@ untested combinations are tracked in
 ### 5. Fixed-seed quality and latency evaluation
 
 - [x] Define a reproducible prompt/input suite, seeds, shapes, sampling settings and metric implementations.
-- [ ] Run non-Turbo against official H3 and Turbo against official H3 plus LightX2V Turbo.
-- [ ] Report LPIPS, audio similarity and VBench, with metric versions and preprocessing documented.
-- [ ] Report end-to-end seconds per request with hardware, warmup policy, repetitions and timing boundaries.
-- [ ] Preserve side-by-side videos and per-example results, including failures and quality regressions.
-- [ ] Record model/code revisions, environment, commands and artifact locations for reproduction.
+- [x] Run non-Turbo against official H3 and Turbo against official H3 plus LightX2V Turbo.
+- [x] Report LPIPS, audio similarity and VBench, with metric versions and preprocessing documented.
+- [x] Report end-to-end seconds per request with hardware, warmup policy, repetitions and timing boundaries.
+- [x] Preserve side-by-side videos and per-example results, including failures and quality regressions.
+- [x] Record model/code revisions, environment, commands and artifact locations for reproduction.
 
 The prepared suite uses three deterministic toy scenes with seeds 42/2026/7
 at 1344×768 and 24 FPS, with matching inputs across each task and A/B pair.
@@ -402,8 +402,8 @@ and four preselected VBench custom-input dimensions: subject consistency,
 background consistency, motion smoothness and aesthetic quality. The latter
 are dimension scores, not a full standard-suite VBench aggregate. Two matched
 generation pairs (non-Turbo T2VA seeds 42 and 2026) were initially complete.
-The fixed-seed plan now has quality metrics for 14/18 matched pairs; four
-seed-7 FL2VA/Ref2VA variant pairs remain. Current scores and evidence are in
+The fixed-seed plan now has quality metrics for all 18/18 matched pairs.
+Current scores and evidence are in
 `~/chenyb/validation/h3-a1/MATCHED_QUALITY_RESULTS.md`. Protocol and self-check
 evidence are in
 `~/chenyb/validation/h3-a1/METRIC_PROTOCOL.md`.
@@ -633,15 +633,13 @@ left/right/mono cosine is 0.1939/0.1715/0.1592. Official vs beta5 VBench scores
 not overall quality. Full metrics, per-frame LPIPS and provenance are under
 `~/chenyb/validation/h3-a1/metrics/matched/seed42-t2va/`; aligned video is
 `side-by-side.mp4` there. This is a separate one-off quality pair; the plan-selected
-measured-run scores are tracked separately. The fixed-seed plan now has complete
-LPIPS/CLAP and paired official/beta5 VBench results for 17/18 cases: all six
-seed-42 cases, all six seed-2026 cases, both seed-7 T2VA cases, both seed-7
-FL2VA cases and seed-7 non-Turbo Ref2VA. One case remains: seed-7 Turbo Ref2VA.
-See `~/chenyb/validation/h3-a1/MATCHED_QUALITY_RESULTS.md` for current paired
-scores and per-case evidence links; regenerate it with
-`summarize-matched-metrics.py` as the last job finishes. Raw per-video exploratory
-results and provenance remain in `~/chenyb/validation/h3-a1/metrics/`.
-All 17 completed pairs have frame-aligned, silent run-01 side-by-side MP4s and
+measured-run scores are tracked separately. The fixed-seed plan has complete
+LPIPS/CLAP and paired official/beta5 VBench results for all 18/18 cases: all six
+seed-42 cases, all six seed-2026 cases, and all six seed-7 task/variant pairs.
+See `~/chenyb/validation/h3-a1/MATCHED_QUALITY_RESULTS.md` for paired scores
+and per-case evidence links. Raw per-video exploratory results and provenance
+remain in `~/chenyb/validation/h3-a1/metrics/`.
+All 18 completed pairs have frame-aligned, silent run-01 side-by-side MP4s and
 JSON provenance manifests under
 `~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo-resident20/metrics/matched/<case>/`.
 
@@ -674,6 +672,22 @@ superiority. Beta5 media checks are recorded in
 `~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo-resident20/non-turbo-ref2va-seed7-beta5-media-validation.json`.
 The matched run-01 visual comparison (official on the left, beta5 on the right)
 is `~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo-resident20/metrics/matched/02-non-turbo-ref2va-seed7/side-by-side.mp4`;
+its source hashes and output metadata are in the neighboring JSON manifest.
+
+For seed-7 Turbo Ref2VA under TP2+DLO resident-layers=20, official H3 with the
+pinned LightX2V 8-step adapter had median end-to-end request time 92.373 s;
+beta5 had 87.704 s (5.05% lower). Mean all-frame LPIPS was 0.139015 and CLAP
+left/right/mono cosine was 0.218321/0.199069/0.235836. Official vs beta5 VBench
+scores (subject, background, motion, aesthetic) were
+0.879780/0.942516/0.996979/0.394138 and 0.966329/0.955039/0.996933/0.423654.
+All four MP4s per side passed manifest SHA256, expected video/audio shape and
+codec checks, finite-audio checks and full ffmpeg decode. These measurements
+characterize this prompt and seed; they do not establish general quality or audio
+superiority. Media checks are recorded in
+`~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo-resident20/turbo-ref2va-seed7-{official,beta5}-media-validation.json`.
+The matched run-01 visual comparison (official H3 + LightX2V on the left, beta5
+on the right) is
+`~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo-resident20/metrics/matched/02-turbo-ref2va-seed7/side-by-side.mp4`;
 its source hashes and output metadata are in the neighboring JSON manifest.
 
 | Variant / task | Subject | Background | Motion | Aesthetic |
