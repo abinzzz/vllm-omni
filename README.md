@@ -634,14 +634,26 @@ not overall quality. Full metrics, per-frame LPIPS and provenance are under
 `~/chenyb/validation/h3-a1/metrics/matched/seed42-t2va/`; aligned video is
 `side-by-side.mp4` there. This is a separate one-off quality pair; the plan-selected
 measured-run scores are tracked separately. The fixed-seed plan now has complete
-LPIPS/CLAP and paired official/beta5 VBench results for 15/18 cases: all six
-seed-42 cases, all six seed-2026 cases, both seed-7 T2VA variants and the
-seed-7 non-Turbo FL2VA pair. Three cases remain: seed-7 Turbo FL2VA and both
-seed-7 Ref2VA variants. See
+LPIPS/CLAP and paired official/beta5 VBench results for 16/18 cases: all six
+seed-42 cases, all six seed-2026 cases, both seed-7 T2VA cases and both seed-7
+FL2VA cases. Two cases remain: both seed-7 Ref2VA variants. See
 `~/chenyb/validation/h3-a1/MATCHED_QUALITY_RESULTS.md` for the current paired
 scores and per-case evidence links; regenerate it with
 `summarize-matched-metrics.py` as more jobs finish. Raw per-video exploratory
 results and provenance remain in `~/chenyb/validation/h3-a1/metrics/`.
+
+For seed-7 Turbo FL2VA at the same shape and TP2+DLO resident-layers=20
+profile, official H3 (with the pinned LightX2V 8-step adapter) had a median
+end-to-end request time of 98.522 s; beta5 had 94.349 s (4.23% lower). Mean
+all-frame LPIPS was 0.029846 and CLAP left/right/mono cosine was
+-0.011210/0.895061/0.136745. Official vs beta5 VBench scores (subject,
+background, motion, aesthetic) were 0.923639/0.962649/0.996742/0.340295 and
+0.980721/0.964028/0.996519/0.287256. All four MP4s per side passed manifest
+SHA256, expected video/audio shape and codec checks, finite-audio checks and
+full ffmpeg decode. These measurements characterize this prompt and seed;
+they do not establish general quality or audio superiority. Beta5 media checks
+are recorded in
+`~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo-resident20/turbo-fl2va-seed7-beta5-media-validation.json`.
 
 | Variant / task | Subject | Background | Motion | Aesthetic |
 | --- | ---: | ---: | ---: | ---: |
