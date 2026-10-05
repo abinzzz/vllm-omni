@@ -641,6 +641,9 @@ FL2VA cases. Two cases remain: both seed-7 Ref2VA variants. See
 scores and per-case evidence links; regenerate it with
 `summarize-matched-metrics.py` as more jobs finish. Raw per-video exploratory
 results and provenance remain in `~/chenyb/validation/h3-a1/metrics/`.
+All 16 completed pairs have frame-aligned, silent run-01 side-by-side MP4s and
+JSON provenance manifests under
+`~/chenyb/validation/h3-a1/evaluation-20261004-tp2-dlo-resident20/metrics/matched/<case>/`.
 
 For seed-7 Turbo FL2VA at the same shape and TP2+DLO resident-layers=20
 profile, official H3 (with the pinned LightX2V 8-step adapter) had a median
